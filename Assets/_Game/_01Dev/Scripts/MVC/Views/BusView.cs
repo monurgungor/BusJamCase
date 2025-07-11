@@ -41,7 +41,7 @@ namespace BusJam.MVC.Views
             this.gameConfig = gameConfig;
         }
 
-        public void Initialize(BusModel busModel, GameConfig config)
+        public void Initialize(BusModel busModel)
         {
             model = busModel;
 
@@ -52,7 +52,7 @@ namespace BusJam.MVC.Views
             var startPosition = model.ArrivalPosition + Vector3.back * 10f;
             transform.position = startPosition;
 
-            ApproachStation(config.BusArrivalSpeed);
+            ApproachStation(gameConfig.BusArrivalSpeed);
         }
 
         private void CreateDefaultSeats()

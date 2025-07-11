@@ -13,7 +13,6 @@ namespace BusJam.Installers
         public override void InstallBindings()
         {
             InstallSignals();
-            InstallConfig();
             InstallPooling();
             InstallManagers();
         }
@@ -92,12 +91,6 @@ namespace BusJam.Installers
                 Container.BindInterfacesAndSelfTo<BenchController>().FromInstance(benchController).AsSingle();
                 Container.QueueForInject(benchController);
             }
-        }
-
-        private void InstallConfig()
-        {
-            var gameConfig = Resources.Load<GameConfig>("GameConfig");
-            Container.BindInstance(gameConfig).AsSingle();
         }
     }
 }

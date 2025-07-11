@@ -166,7 +166,7 @@ namespace BusJam.MVC.Controllers
                 busDeparturePoint.position
             );
 
-            busView.Initialize(busModel, _gameConfig);
+            busView.Initialize(busModel);
             _activeBuses.Add(busView);
 
             _signalBus.Fire(new BusSpawnedSignal(busView.gameObject, busData.busColor));
