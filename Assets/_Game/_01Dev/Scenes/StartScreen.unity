@@ -417,6 +417,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5fc2627e9323ae47af5e76f0ce0ff75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  poolingInstaller: {fileID: 1113367198}
 --- !u!4 &1049446497
 Transform:
   m_ObjectHideFlags: 0
@@ -461,8 +462,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8917ab5138dd604e99fe074980a3ea5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridCellPrefab: {fileID: 7429896318297428377, guid: 58bae002886628e4485065ccae7a02f8,
-    type: 3}
   gridParent: {fileID: 1069248071}
 --- !u!4 &1069248071
 Transform:
@@ -479,6 +478,59 @@ Transform:
   m_Children: []
   m_Father: {fileID: 931833831}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1113367196
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1113367197}
+  - component: {fileID: 1113367198}
+  m_Layer: 0
+  m_Name: PoolInstaller
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1113367197
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1113367196}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.32656193, y: -2.4139214, z: 2.381237}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1113367198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1113367196}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0ec1ad5cae61494e9b682081858e7cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  passengerPrefab: {fileID: 2311413457019026053, guid: 11fbe8d672e25414bb85dc93f72b4c49,
+    type: 3}
+  busPrefab: {fileID: 6828070248870022064, guid: 3d3bb6dd3afdfb14a8ba5cb81e72db7b,
+    type: 3}
+  gridCellPrefab: {fileID: 4595579757995389245, guid: 58bae002886628e4485065ccae7a02f8,
+    type: 3}
+  passengerPoolSize: 10
+  busPoolSize: 5
+  gridCellPoolSize: 50
 --- !u!1 &1172771127
 GameObject:
   m_ObjectHideFlags: 0
@@ -509,8 +561,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   passengerParent: {fileID: 1172771129}
-  passengerPrefab: {fileID: 7542952054259135165, guid: 11fbe8d672e25414bb85dc93f72b4c49,
-    type: 3}
 --- !u!4 &1172771129
 Transform:
   m_ObjectHideFlags: 0
@@ -757,11 +807,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 33de53299397d07479a9ed7e1bf9f720, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  busParent: {fileID: 855287616}
+  busParent: {fileID: 0}
   busArrivalPoint: {fileID: 299491935}
   busDeparturePoint: {fileID: 211919748}
-  busPrefab: {fileID: 5634282344909117720, guid: 3d3bb6dd3afdfb14a8ba5cb81e72db7b,
-    type: 3}
 --- !u!4 &1888451370
 Transform:
   m_ObjectHideFlags: 0
@@ -788,4 +836,5 @@ SceneRoots:
   - {fileID: 855287616}
   - {fileID: 299491935}
   - {fileID: 211919748}
+  - {fileID: 1113367197}
   - {fileID: 931833831}

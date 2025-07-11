@@ -1,9 +1,11 @@
 using System.Collections.Generic;
+using System.Linq;
 using BusJam.Core;
 using BusJam.Data;
 using BusJam.Events;
 using BusJam.MVC.Models;
 using BusJam.MVC.Views;
+using BusJam.Pooling;
 using UnityEngine;
 using Zenject;
 
@@ -14,11 +16,10 @@ namespace BusJam.MVC.Controllers
         [SerializeField] private Transform busParent;
         [SerializeField] private Transform busArrivalPoint;
         [SerializeField] private Transform busDeparturePoint;
-        [SerializeField] private GameObject busPrefab;
         private readonly List<BusView> _activeBuses = new();
         private readonly Queue<BusData> _busSequence = new();
         private BenchController _benchController;
-        private DiContainer _container;
+        private PoolingBuses _busPool;
         private GameConfig _gameConfig;
 
         private SignalBus _signalBus;
@@ -35,13 +36,13 @@ namespace BusJam.MVC.Controllers
         }
 
         [Inject]
-        public void Construct(SignalBus signalBus, GameConfig gameConfig, DiContainer container,
+        public void Construct(SignalBus signalBus, GameConfig gameConfig, PoolingBuses busPool,
             BenchController benchController)
         {
-            this._signalBus = signalBus;
-            this._gameConfig = gameConfig;
-            this._container = container;
-            this._benchController = benchController;
+            _signalBus = signalBus;
+            _gameConfig = gameConfig;
+            _busPool = busPool;
+            _benchController = benchController;
         }
 
         private void SubscribeToEvents()
@@ -107,21 +108,15 @@ namespace BusJam.MVC.Controllers
             return null;
         }
 
-        public BusView GetApproachingBusOfColor(PassengerColor color)
-        {
-            foreach (var busView in _activeBuses)
-            {
-                var model = busView.GetModel();
-                if (model.BusColor == color && model.State == BusState.Approaching) return busView;
-            }
-
-            return null;
-        }
-
         private void OnBusDeparted(BusDepartedSignal signal)
         {
             var busView = signal.BusView.GetComponent<BusView>();
-            if (busView != null) _activeBuses.Remove(busView);
+            if (busView != null) 
+            {
+                _activeBuses.Remove(busView);
+                
+                _busPool.Return(busView);
+            }
 
             SpawnNextBus();
 
@@ -152,46 +147,35 @@ namespace BusJam.MVC.Controllers
 
         private void SpawnBus(BusData busData)
         {
-            GameObject busGo;
-
-            if (busPrefab != null)
+            var busView = _busPool.Get();
+            if (busView == null)
             {
-                busGo = Instantiate(busPrefab, busParent);
-                busGo.transform.localPosition = Vector3.zero;
-            }
-            else
-            {
-                busGo = null;
-                Debug.LogError("Bus prefab not found on" + gameObject.name);
+                Debug.LogError("Failed to get bus from pool");
+                return;
             }
 
-            if (busGo != null)
+            if (busParent != null)
             {
-                var busView = busGo.GetComponent<BusView>();
-                if (busView != null)
-                {
-                    _container.Inject(busView);
-
-                    var busModel = new BusModel(
-                        busData.busColor,
-                        busData.capacity,
-                        busArrivalPoint.position,
-                        busDeparturePoint.position
-                    );
-
-                    busView.Initialize(busModel, _gameConfig);
-                    _activeBuses.Add(busView);
-
-                    _signalBus.Fire(new BusSpawnedSignal(busGo, busData.busColor));
-                }
+                busView.transform.SetParent(busParent);
             }
+
+            var busModel = new BusModel(
+                busData.busColor,
+                busData.capacity,
+                busArrivalPoint.position,
+                busDeparturePoint.position
+            );
+
+            busView.Initialize(busModel, _gameConfig);
+            _activeBuses.Add(busView);
+
+            _signalBus.Fire(new BusSpawnedSignal(busView.gameObject, busData.busColor));
         }
 
         private void ClearAllBuses()
         {
-            foreach (var bus in _activeBuses)
-                if (bus != null && bus.gameObject != null)
-                    DestroyImmediate(bus.gameObject);
+            foreach (var bus in _activeBuses.Where(bus => bus != null))
+                _busPool.Return(bus);
 
             _activeBuses.Clear();
         }

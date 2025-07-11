@@ -1,5 +1,4 @@
 using BusJam.Core;
-using BusJam.Events;
 using UnityEngine;
 using Zenject;
 
@@ -11,11 +10,8 @@ namespace BusJam.MVC.Views
         private GameConfig gameConfig;
         private Vector2Int gridPosition;
 
-        private SignalBus signalBus;
-
         public Vector2Int GridPosition => gridPosition;
         public Vector3 WorldPosition { get; private set; }
-
         public bool IsEmpty { get; private set; }
 
         private void Awake()
@@ -24,15 +20,9 @@ namespace BusJam.MVC.Views
                 cellRenderer = GetComponent<Renderer>();
         }
 
-        private void OnMouseDown()
-        {
-            signalBus.Fire(new GridCellClickedSignal(gridPosition, WorldPosition));
-        }
-
         [Inject]
-        public void Construct(SignalBus signalBus, GameConfig gameConfig)
+        public void Construct(GameConfig gameConfig)
         {
-            this.signalBus = signalBus;
             this.gameConfig = gameConfig;
         }
 
@@ -49,6 +39,13 @@ namespace BusJam.MVC.Views
         public void SetEmpty(bool empty)
         {
             IsEmpty = empty;
+            
+            if (cellRenderer != null)
+            {
+                var color = IsEmpty ? Color.white : Color.gray;
+                color.a = 0.1f;
+                cellRenderer.material.color = color;
+            }
         }
     }
 }

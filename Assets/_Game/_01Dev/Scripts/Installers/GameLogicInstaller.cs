@@ -8,11 +8,26 @@ namespace BusJam.Installers
 {
     public class GameLogicInstaller : MonoInstaller
     {
+        [SerializeField] private PoolingInstaller poolingInstaller;
+
         public override void InstallBindings()
         {
             InstallSignals();
-            InstallManagers();
             InstallConfig();
+            InstallPooling();
+            InstallManagers();
+        }
+
+        private void InstallPooling()
+        {
+            if (poolingInstaller != null)
+            {
+                poolingInstaller.InstallBindings(Container);
+            }
+            else
+            {
+                Debug.LogWarning("PoolingInstaller not assigned in GameLogicInstaller");
+            }
         }
 
         private void InstallSignals()
