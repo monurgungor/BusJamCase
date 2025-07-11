@@ -53,6 +53,13 @@ namespace BusJam.Installers
             Container.DeclareSignal<GridCellClickedSignal>().OptionalSubscriber();
             Container.DeclareSignal<AllBusesCompletedSignal>().OptionalSubscriber();
             Container.DeclareSignal<AllPassengersRemovedSignal>().OptionalSubscriber();
+
+            Container.DeclareSignal<GameStateChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<EnterMainMenuSignal>().OptionalSubscriber();
+            Container.DeclareSignal<EnterLevelSelectSignal>().OptionalSubscriber();
+            Container.DeclareSignal<EnterPlayingSignal>().OptionalSubscriber();
+            Container.DeclareSignal<EnterLevelCompleteSignal>().OptionalSubscriber();
+            Container.DeclareSignal<EnterLevelFailedSignal>().OptionalSubscriber();
         }
 
         private void InstallManagers()
@@ -90,6 +97,13 @@ namespace BusJam.Installers
             {
                 Container.BindInterfacesAndSelfTo<BenchController>().FromInstance(benchController).AsSingle();
                 Container.QueueForInject(benchController);
+            }
+
+            var gameStateManager = FindObjectOfType<GameStateManager>();
+            if (gameStateManager != null)
+            {
+                Container.BindInterfacesAndSelfTo<GameStateManager>().FromInstance(gameStateManager).AsSingle();
+                Container.QueueForInject(gameStateManager);
             }
         }
     }

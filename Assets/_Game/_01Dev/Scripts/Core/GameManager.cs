@@ -9,6 +9,7 @@ namespace BusJam.Core
     public class GameManager : MonoBehaviour
     {
         private SignalBus _signalBus;
+        private GameStateManager _gameStateManager;
 
         private static GameManager Instance { get; set; }
         private LevelData CurrentLevelData { get; set; }
@@ -37,7 +38,6 @@ namespace BusJam.Core
                 if (CurrentLevelData != null)
                 {
                     LoadLevel(CurrentLevelData);
-                    StartLevel();
                 }
             }
         }
@@ -56,11 +56,13 @@ namespace BusJam.Core
         public void Construct(
             SignalBus signalBus,
             GameConfig gameConfig,
-            LevelData levelData)
+            LevelData levelData,
+            GameStateManager gameStateManager)
         {
             this._signalBus = signalBus;
             GameConfig = gameConfig;
             CurrentLevelData = levelData;
+            _gameStateManager = gameStateManager;
         }
 
         private void SubscribeToEvents()
@@ -79,7 +81,11 @@ namespace BusJam.Core
 
         public void StartLevel()
         {
-            if (CurrentLevelData != null) _signalBus.Fire(new LevelStartedSignal(CurrentLevelData));
+            if (CurrentLevelData != null) 
+            {
+                Debug.Log($"[GAME MANAGER] Starting level: {CurrentLevelData.name}");
+                _signalBus.Fire(new LevelStartedSignal(CurrentLevelData));
+            }
         }
 
         public void PauseGame()
@@ -103,10 +109,12 @@ namespace BusJam.Core
 
         private void OnLevelCompleted()
         {
+            Debug.Log("[GAME MANAGER] Level completed, transitioning to level complete state");
         }
 
         private void OnLevelFailed()
         {
+            Debug.Log("[GAME MANAGER] Level failed, transitioning to level failed state");
         }
 
         private void OnAllBusesCompleted()

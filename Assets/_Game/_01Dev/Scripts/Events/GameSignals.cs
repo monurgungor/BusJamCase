@@ -3,6 +3,14 @@ using UnityEngine;
 
 namespace BusJam.Events
 {
+    public enum GameState
+    {
+        MainMenu = 0,
+        LevelSelect = 1,
+        Playing = 2,
+        LevelComplete = 3,
+        LevelFailed = 4
+    }
     public struct LevelLoadedSignal
     {
         public readonly LevelData LevelData;
@@ -177,6 +185,39 @@ namespace BusJam.Events
     }
 
     public struct AllPassengersRemovedSignal
+    {
+    }
+
+    public struct GameStateChangedSignal
+    {
+        public readonly GameState PreviousState;
+        public readonly GameState NewState;
+
+        public GameStateChangedSignal(GameState previousState, GameState newState)
+        {
+            PreviousState = previousState;
+            NewState = newState;
+            Debug.Log($"[GAME STATE] Changed from {previousState} to {newState}");
+        }
+    }
+
+    public struct EnterMainMenuSignal
+    {
+    }
+
+    public struct EnterLevelSelectSignal
+    {
+    }
+
+    public struct EnterPlayingSignal
+    {
+    }
+
+    public struct EnterLevelCompleteSignal
+    {
+    }
+
+    public struct EnterLevelFailedSignal
     {
     }
 }
