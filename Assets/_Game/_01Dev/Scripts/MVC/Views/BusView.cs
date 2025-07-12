@@ -107,6 +107,8 @@ namespace BusJam.MVC.Views
 
             if (model.AddPassenger(passengerView))
             {
+                passengerView.transform.SetParent(transform);
+                
                 if (model.CurrentPassengerCount <= passengerSeats.Length)
                 {
                     var seat = passengerSeats[model.CurrentPassengerCount - 1];
@@ -146,7 +148,7 @@ namespace BusJam.MVC.Views
             signalBus.Fire(new BusLoadedSignal(gameObject, model.BusColor, model.CurrentPassengerCount));
 
             var distance = Vector3.Distance(transform.position, model.DeparturePosition);
-            var duration = distance / 8f;
+            var duration = distance / gameConfig.BusDepartureSpeed;
 
             transform.DOMove(model.DeparturePosition, duration)
                 .SetEase(moveCurve)

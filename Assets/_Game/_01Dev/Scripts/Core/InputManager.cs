@@ -9,6 +9,7 @@ namespace BusJam.Core
     {
         private SignalBus _signalBus;
         private Camera _mainCamera;
+        private GameStateManager _gameStateManager;
 
         public void Initialize()
         {
@@ -20,14 +21,61 @@ namespace BusJam.Core
         }
 
         [Inject]
-        public void Construct(SignalBus signalBus)
+        public void Construct(SignalBus signalBus, GameStateManager gameStateManager)
         {
             _signalBus = signalBus;
+            _gameStateManager = gameStateManager;
         }
 
         private void Update()
         {
             HandleInput();
+            HandleDebugInput();
+        }
+        
+        private void HandleDebugInput()
+        {
+            if (_gameStateManager == null) return;
+
+            if (Input.GetKeyDown(KeyCode.P))
+            {
+                if (_gameStateManager.CurrentState == GameState.MainMenu)
+                {
+                    _signalBus.Fire(new LoadLevelRequestedSignal(0));
+                }
+                else if (_gameStateManager.CurrentState == GameState.LevelComplete || _gameStateManager.CurrentState == GameState.LevelFailed)
+                {
+                    _signalBus.Fire<RestartLevelRequestedSignal>();
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                if (_gameStateManager.CurrentState == GameState.Playing)
+                {
+                    _signalBus.Fire<PauseGameRequestedSignal>();
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                if (_gameStateManager.CurrentState == GameState.Playing)
+                {
+                    _signalBus.Fire<ResumeGameRequestedSignal>();
+                }
+            }
+
+            if (_gameStateManager.CurrentState == GameState.MainMenu)
+            {
+                for (var i = 0; i < 10; i++)
+                {
+                    if (!Input.GetKeyDown(KeyCode.Alpha0 + i)) continue;
+                    
+                    var levelIndex = i == 0 ? 9 : i - 1;
+                    _signalBus.Fire(new LoadLevelRequestedSignal(levelIndex));
+                    break;
+                }
+            }
         }
 
         private void HandleInput()

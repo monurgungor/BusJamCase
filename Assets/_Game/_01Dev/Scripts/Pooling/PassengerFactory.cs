@@ -36,7 +36,7 @@ namespace BusJam.Factories
 
         public void Release(PassengerView passengerView)
         {
-            if (passengerView == null) return;
+            if (passengerView == null || _pool == null) return;
             
             _pool.Return(passengerView);
         }

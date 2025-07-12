@@ -59,7 +59,7 @@ namespace BusJam.Pooling
         
         public void Return(PassengerView obj)
         {
-            if (obj == null) return;
+            if (obj == null || this == null) return;
             
             obj.transform.DOKill();
             

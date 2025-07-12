@@ -1,4 +1,5 @@
 using BusJam.Data;
+using BusJam.MVC.Views;
 using UnityEngine;
 
 namespace BusJam.Events
@@ -60,7 +61,6 @@ namespace BusJam.Events
             PassengerView = passengerView;
             Color = color;
             GridPosition = gridPosition;
-            Debug.Log($"[PASSENGER] Created {color} passenger at {gridPosition} | Object: {passengerView?.name}");
         }
     }
 
@@ -103,6 +103,14 @@ namespace BusJam.Events
             PassengerView = passengerView;
             Color = color;
             Debug.Log($"[PASSENGER] Removed {color} passenger | Object: {passengerView?.name}");
+        }
+        
+        public PassengerRemovedSignal(GameObject passengerView)
+        {
+            PassengerView = passengerView;
+            var passengerView_component = passengerView?.GetComponent<PassengerView>();
+            Color = passengerView_component?.GetModel()?.Color ?? PassengerColor.Red;
+            Debug.Log($"[PASSENGER] Removed {Color} passenger | Object: {passengerView?.name}");
         }
     }
 
@@ -304,4 +312,17 @@ namespace BusJam.Events
     public struct AllLevelsCompletedSignal
     {
     }
+    public struct LoadLevelRequestedSignal
+    {
+        public readonly int LevelIndex;
+
+        public LoadLevelRequestedSignal(int levelIndex)
+        {
+            LevelIndex = levelIndex;
+        }
+    }
+
+    public struct RestartLevelRequestedSignal { }
+    public struct PauseGameRequestedSignal { }
+    public struct ResumeGameRequestedSignal { }
 }

@@ -97,8 +97,7 @@ namespace BusJam.Core
         {
             _isRunning = false;
             _signalBus.Fire<TimerExpiredSignal>();
-            _signalBus.Fire<LevelFailedSignal>();
-            Debug.LogWarning("[TIMER] Time's up! Level failed");
+            Debug.LogWarning("[TIMER] Time's up! Timer expired");
         }
 
         private void OnLevelStarted(LevelStartedSignal signal)

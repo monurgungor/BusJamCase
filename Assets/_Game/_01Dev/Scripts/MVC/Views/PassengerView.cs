@@ -11,8 +11,6 @@ namespace BusJam.MVC.Views
     {
         [SerializeField] private Renderer passengerRenderer;
         [SerializeField] private AnimationCurve moveCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
-        [SerializeField] private float moveSpeed = 3f;
-        [SerializeField] private float selectionScaleMultiplier = 1.1f;
         
         private GameConfig gameConfig;
         private PassengerModel model;
@@ -83,7 +81,7 @@ namespace BusJam.MVC.Views
 
             isAnimating = true;
             var distance = Vector3.Distance(transform.position, destination);
-            var duration = distance / moveSpeed;
+            var duration = distance / gameConfig.PassengerMoveSpeed;
 
             if (_animationController != null)
             {
@@ -143,7 +141,7 @@ namespace BusJam.MVC.Views
             for (var i = 0; i < worldPath.Count; i++)
             {
                 var distance = i == 0 ? Vector3.Distance(transform.position, worldPath[i]) : Vector3.Distance(worldPath[i-1], worldPath[i]);
-                var duration = distance / moveSpeed;
+                var duration = distance / gameConfig.PassengerMoveSpeed;
                 
                 var targetPos = worldPath[i];
                 var currentPos = i == 0 ? transform.position : worldPath[i-1];
@@ -179,7 +177,7 @@ namespace BusJam.MVC.Views
 
         public void PlayPickupAnimation()
         {
-            transform.DOPunchScale(Vector3.one * 0.3f, 0.3f);
+            transform.DOPunchScale(Vector3.one * 0.3f, gameConfig.PickupAnimationDuration);
         }
 
         public PassengerModel GetModel()
@@ -194,16 +192,9 @@ namespace BusJam.MVC.Views
 
         public void PlayErrorAnimation()
         {
-            transform.DOShakePosition(0.3f, 0.1f, 10, 90f);
+            transform.DOShakePosition(gameConfig.ErrorAnimationDuration, 0.1f, 10, 90f);
         }
 
-        public void SetInteractable(bool interactable)
-        {
-            if (model != null)
-            {
-                model.SetState(interactable ? PassengerState.OnGrid : PassengerState.Moving);
-            }
-        }
 
         public void ResetToForwardRotation()
         {

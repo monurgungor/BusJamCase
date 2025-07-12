@@ -63,10 +63,7 @@ namespace BusJam.MVC.Controllers
         
         private BusController _busController;
         private BenchController _benchController;
-
-        public int Width => _gridModel?.Width ?? 0;
-        public int Height => _gridModel?.Height ?? 0;
-        public float CellSize => _gridModel?.CellSize ?? 1f;
+        
         public Vector3 GridOffset => gridParent != null ? gridParent.position : Vector3.zero;
         public GridCellView[,] GridCells { get; private set; }
         
@@ -114,6 +111,7 @@ namespace BusJam.MVC.Controllers
         {
             _busController = busController;
             _benchController = benchController;
+            Debug.Log("[GRID CONTROLLER] Controllers registered successfully");
         }
         
         #region Grid Management
@@ -168,7 +166,7 @@ namespace BusJam.MVC.Controllers
         }
 
         #endregion
-
+        
         public MovementValidationResult ValidatePassengerMovement(Vector2Int passengerPosition, PassengerColor color)
         {
             if (!CanPassengerMoveAtAll(passengerPosition))
@@ -190,18 +188,26 @@ namespace BusJam.MVC.Controllers
             var neighbors = GetDirectNeighbors(position);
             return neighbors.Any(IsCellEmpty);
         }
-
+        
         private bool IsBusAvailableForColor(PassengerColor color)
         {
-            if (_busController == null) return false;
+            if (_busController == null)
+            {
+                Debug.LogWarning("[GRID CONTROLLER] BusController not registered");
+                return false;
+            }
             
             var bus = _busController.GetLoadingBusOfColor(color);
             return bus != null && !bus.GetModel().IsFull;
         }
-
+        
         private bool IsBenchSpaceAvailable()
         {
-            if (_benchController == null) return false;
+            if (_benchController == null)
+            {
+                Debug.LogWarning("[GRID CONTROLLER] BenchController not registered");
+                return false;
+            }
             return _benchController.CanAcceptPassenger();
         }
         
@@ -277,7 +283,7 @@ namespace BusJam.MVC.Controllers
 
         private void ClearGrid()
         {
-            if (GridCells != null)
+            if (GridCells != null && _gridCellPool != null)
             {
                 foreach (var cell in GridCells)
                     if (cell != null)
@@ -296,10 +302,9 @@ namespace BusJam.MVC.Controllers
         #endregion
 
         #region Pathfinding
-
         public List<Vector2Int> FindPathToFrontRow(Vector2Int startPos)
         {
-            var targetRow = 0;
+            const int targetRow = 0;
             
             if (startPos.y == targetRow)
             {
@@ -325,13 +330,8 @@ namespace BusJam.MVC.Controllers
                 var neighbors = GetDirectNeighbors(current.Position);
                 foreach (var neighbor in neighbors)
                 {
-                    if (visited.Contains(neighbor))
+                    if (visited.Contains(neighbor) || !IsCellEmpty(neighbor))
                         continue;
-                        
-                    if (!IsCellEmpty(neighbor))
-                    {
-                        continue;
-                    }
                     
                     visited.Add(neighbor);
                     var newPath = new List<Vector2Int>(current.Path) { neighbor };
@@ -341,7 +341,7 @@ namespace BusJam.MVC.Controllers
             
             return new List<Vector2Int>();
         }
-
+        
         private class PathNode
         {
             public Vector2Int Position { get; }

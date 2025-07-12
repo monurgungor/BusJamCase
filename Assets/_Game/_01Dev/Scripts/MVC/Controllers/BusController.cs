@@ -16,13 +16,18 @@ namespace BusJam.MVC.Controllers
         [SerializeField] private Transform busParent;
         [SerializeField] private Transform busArrivalPoint;
         [SerializeField] private Transform busDeparturePoint;
+        
         private readonly List<BusView> _activeBuses = new();
         private readonly Queue<BusQueueEntry> _busSequence = new();
+        
         private BenchController _benchController;
         private PoolingBuses _busPool;
         private GameConfig _gameConfig;
-
         private SignalBus _signalBus;
+
+        public int ActiveBusCount => _activeBuses.Count;
+        public int RemainingBusCount => _busSequence.Count;
+        public bool HasActiveBuses => _activeBuses.Count > 0;
 
         private void OnDestroy()
         {
@@ -66,43 +71,78 @@ namespace BusJam.MVC.Controllers
         private void OnBusArrived(BusArrivedSignal signal)
         {
             var busView = signal.BusView.GetComponent<BusView>();
-            if (busView == null) return;
+            if (busView == null)
+            {
+                Debug.LogError("[BUS CONTROLLER] BusView component not found on arrived bus");
+                return;
+            }
 
-            busView.GetModel();
-
+            Debug.Log($"[BUS CONTROLLER] {signal.BusColor} bus arrived, starting passenger loading");
             AutoLoadPassengersFromQueue(busView);
         }
-
+        
         private void AutoLoadPassengersFromQueue(BusView busView)
         {
-            var busModel = busView.GetModel();
+            if (_benchController == null)
+            {
+                Debug.LogError("[BUS CONTROLLER] BenchController not available for passenger loading");
+                return;
+            }
 
-            var passengerGo = _benchController.RemovePassengerOfColorFromQueue(busModel.BusColor);
+            var busModel = busView.GetModel();
+            var loadedCount = 0;
+
             while (!busModel.IsFull && _benchController.GetPassengerCountOfColor(busModel.BusColor) > 0)
             {
+                var passengerGo = _benchController.RemovePassengerOfColorFromQueue(busModel.BusColor);
                 if (passengerGo == null) break;
 
-                var passengerView = passengerGo.GetComponent<PassengerView>();
-                if (passengerView == null) continue;
-
-                if (busView.BoardPassenger(passengerGo))
+                if (TryBoardPassenger(busView, passengerGo))
                 {
-                    passengerView.GetModel().SetState(PassengerState.OnBus);
+                    loadedCount++;
                 }
                 else
                 {
                     _benchController.AddPassengerToQueue(passengerGo);
+                    Debug.LogWarning("[BUS CONTROLLER] Failed to board passenger, returning to queue");
                     break;
                 }
             }
-        }
 
+            Debug.Log($"[BUS CONTROLLER] Loaded {loadedCount} passengers onto {busModel.BusColor} bus");
+            
+            _signalBus.Fire(new BusLoadedSignal(busView.gameObject, busModel.BusColor, loadedCount));
+        }
+        
+        private bool TryBoardPassenger(BusView busView, GameObject passengerGo)
+        {
+            var passengerView = passengerGo.GetComponent<PassengerView>();
+            if (passengerView == null)
+            {
+                Debug.LogError("[BUS CONTROLLER] PassengerView component not found");
+                return false;
+            }
+
+            if (busView.BoardPassenger(passengerGo))
+            {
+                passengerView.GetModel().SetState(PassengerState.OnBus);
+                return true;
+            }
+
+            return false;
+        }
+        
         public BusView GetLoadingBusOfColor(PassengerColor color)
         {
             foreach (var busView in _activeBuses)
             {
+                if (busView == null) continue;
+
                 var model = busView.GetModel();
-                if (model.BusColor == color && model.State == BusState.Loading && !model.IsFull) return busView;
+                if (model.BusColor == color && model.State == BusState.Loading && !model.IsFull)
+                {
+                    return busView;
+                }
             }
 
             return null;
@@ -111,24 +151,62 @@ namespace BusJam.MVC.Controllers
         private void OnBusDeparted(BusDepartedSignal signal)
         {
             var busView = signal.BusView.GetComponent<BusView>();
-            if (busView != null) 
+            if (busView != null)
             {
-                _activeBuses.Remove(busView);
+                RemovePassengersFromBus(busView);
                 
+                _activeBuses.Remove(busView);
                 _busPool.Return(busView);
+                Debug.Log($"[BUS CONTROLLER] {signal.BusColor} bus departed and returned to pool");
             }
 
             SpawnNextBus();
 
-            if (_busSequence.Count == 0 && _activeBuses.Count == 0) _signalBus.Fire<AllBusesCompletedSignal>();
+            CheckAllBusesCompleted();
         }
-
+        
+        private void RemovePassengersFromBus(BusView busView)
+        {
+            var busModel = busView.GetModel();
+            var passengers = busModel.GetPassengers();
+            
+            foreach (var passengerGO in passengers)
+            {
+                if (passengerGO != null)
+                {
+                    _signalBus.Fire(new PassengerRemovedSignal(passengerGO));
+                }
+            }
+            
+            busModel.ClearPassengers();
+        }
+        
+        private void CheckAllBusesCompleted()
+        {
+            if (_busSequence.Count == 0 && _activeBuses.Count == 0)
+            {
+                Debug.Log("[BUS CONTROLLER] All buses completed their routes");
+                _signalBus.Fire<AllBusesCompletedSignal>();
+            }
+        }
+        
         private void SetupBusSequence(List<BusQueueEntry> busDataList)
         {
             _busSequence.Clear();
             ClearAllBuses();
 
-            foreach (var busData in busDataList) _busSequence.Enqueue(busData);
+            if (busDataList == null || busDataList.Count == 0)
+            {
+                Debug.LogWarning("[BUS CONTROLLER] No bus data provided for level");
+                return;
+            }
+
+            foreach (var busData in busDataList)
+            {
+                _busSequence.Enqueue(busData);
+            }
+
+            Debug.Log($"[BUS CONTROLLER] Set up bus sequence with {busDataList.Count} buses");
         }
 
         private void StartBusSequence()
@@ -144,19 +222,25 @@ namespace BusJam.MVC.Controllers
                 SpawnBus(busData);
             }
         }
-
+        
         private void SpawnBus(BusQueueEntry busData)
         {
             var busView = _busPool.Get();
             if (busView == null)
             {
-                Debug.LogError("Failed to get bus from pool");
+                Debug.LogError("[BUS CONTROLLER] Failed to get bus from pool");
                 return;
             }
 
             if (busParent != null)
             {
                 busView.transform.SetParent(busParent);
+            }
+
+            if (busArrivalPoint == null || busDeparturePoint == null)
+            {
+                Debug.LogError("[BUS CONTROLLER] Bus arrival or departure point not set");
+                return;
             }
 
             var busModel = new BusModel(
@@ -169,15 +253,26 @@ namespace BusJam.MVC.Controllers
             busView.Initialize(busModel);
             _activeBuses.Add(busView);
 
+            Debug.Log($"[BUS CONTROLLER] Spawned {busData.busColor} bus with capacity {busData.capacity}");
             _signalBus.Fire(new BusSpawnedSignal(busView.gameObject, busData.busColor));
         }
-
+        
         private void ClearAllBuses()
         {
-            foreach (var bus in _activeBuses.Where(bus => bus != null))
-                _busPool.Return(bus);
+            var busCount = _activeBuses.Count;
+            
+            if (_busPool != null)
+            {
+                foreach (var bus in _activeBuses.Where(bus => bus != null))
+                    _busPool.Return(bus);
+            }
 
             _activeBuses.Clear();
+            
+            if (busCount > 0)
+            {
+                Debug.Log($"[BUS CONTROLLER] Cleared {busCount} active buses");
+            }
         }
 
         private void UnsubscribeFromEvents()

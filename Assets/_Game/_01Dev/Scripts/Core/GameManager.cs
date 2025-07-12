@@ -6,45 +6,25 @@ using Zenject;
 
 namespace BusJam.Core
 {
-    public class GameManager : MonoBehaviour
+    public class GameManager : MonoBehaviour, IInitializable
     {
         private SignalBus _signalBus;
         private GameStateManager _gameStateManager;
         private LevelManager _levelManager;
+        private WinConditionManager _winConditionManager;
 
-        private static GameManager Instance { get; set; }
         private LevelData CurrentLevelData { get; set; }
-
         private GameConfig GameConfig { get; set; }
 
-        private void Awake()
+        public void Initialize()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
-
-        private void Start()
-        {
-            if (_signalBus != null && GameConfig != null)
-            {
-                SubscribeToEvents();
-            }
+            SubscribeToEvents();
         }
 
         private void OnDestroy()
         {
             DOTween.Kill(this);
             DOTween.Kill(gameObject);
-
-            if (Instance == this) Instance = null;
-
             UnsubscribeFromEvents();
         }
 
@@ -53,12 +33,14 @@ namespace BusJam.Core
             SignalBus signalBus,
             GameConfig gameConfig,
             GameStateManager gameStateManager,
-            LevelManager levelManager)
+            LevelManager levelManager,
+            WinConditionManager winConditionManager)
         {
-            this._signalBus = signalBus;
+            _signalBus = signalBus;
             GameConfig = gameConfig;
             _gameStateManager = gameStateManager;
             _levelManager = levelManager;
+            _winConditionManager = winConditionManager;
         }
 
         private void SubscribeToEvents()
@@ -69,6 +51,9 @@ namespace BusJam.Core
             _signalBus.Subscribe<AllPassengersRemovedSignal>(OnAllPassengersRemoved);
             _signalBus.Subscribe<LevelChangedSignal>(OnLevelChanged);
             _signalBus.Subscribe<LevelRestartedSignal>(OnLevelRestarted);
+            
+            _signalBus.Subscribe<PauseGameRequestedSignal>(PauseGame);
+            _signalBus.Subscribe<ResumeGameRequestedSignal>(ResumeGame);
         }
 
         public void LoadLevel(LevelData levelData)
@@ -121,12 +106,12 @@ namespace BusJam.Core
 
         private void OnAllBusesCompleted()
         {
-            _signalBus.Fire<LevelCompletedSignal>();
+            Debug.Log("[GAME MANAGER] All buses completed signal received");
         }
 
         private void OnAllPassengersRemoved()
         {
-            _signalBus.Fire<LevelCompletedSignal>();
+            Debug.Log("[GAME MANAGER] All passengers removed signal received");
         }
 
         private void OnLevelChanged(LevelChangedSignal signal)
@@ -151,6 +136,9 @@ namespace BusJam.Core
             _signalBus?.TryUnsubscribe<AllPassengersRemovedSignal>(OnAllPassengersRemoved);
             _signalBus?.TryUnsubscribe<LevelChangedSignal>(OnLevelChanged);
             _signalBus?.TryUnsubscribe<LevelRestartedSignal>(OnLevelRestarted);
+            
+            _signalBus?.TryUnsubscribe<PauseGameRequestedSignal>(PauseGame);
+            _signalBus?.TryUnsubscribe<ResumeGameRequestedSignal>(ResumeGame);
         }
     }
 }

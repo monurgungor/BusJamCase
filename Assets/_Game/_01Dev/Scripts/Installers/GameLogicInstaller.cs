@@ -74,6 +74,11 @@ namespace BusJam.Installers
             Container.DeclareSignal<LevelRestartedSignal>().OptionalSubscriber();
             Container.DeclareSignal<NextLevelAvailableSignal>().OptionalSubscriber();
             Container.DeclareSignal<AllLevelsCompletedSignal>().OptionalSubscriber();
+
+            Container.DeclareSignal<LoadLevelRequestedSignal>();
+            Container.DeclareSignal<RestartLevelRequestedSignal>();
+            Container.DeclareSignal<PauseGameRequestedSignal>();
+            Container.DeclareSignal<ResumeGameRequestedSignal>();
         }
 
         private void InstallManagers()
@@ -81,8 +86,15 @@ namespace BusJam.Installers
             var gameManager = FindObjectOfType<GameManager>();
             if (gameManager != null)
             {
-                Container.BindInstance(gameManager).AsSingle();
+                Container.BindInterfacesAndSelfTo<GameManager>().FromInstance(gameManager).AsSingle();
                 Container.QueueForInject(gameManager);
+            }
+
+            var winConditionManager = FindObjectOfType<WinConditionManager>();
+            if (winConditionManager != null)
+            {
+                Container.BindInterfacesAndSelfTo<WinConditionManager>().FromInstance(winConditionManager).AsSingle();
+                Container.QueueForInject(winConditionManager);
             }
 
             var gridController = FindObjectOfType<GridController>();

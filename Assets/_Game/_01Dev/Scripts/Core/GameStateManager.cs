@@ -19,96 +19,6 @@ namespace BusJam.Core
             ChangeState(GameState.MainMenu);
         }
 
-        private void Update()
-        {
-            HandleInput();
-        }
-
-        private void HandleInput()
-        {
-            if (Input.GetKeyDown(KeyCode.P))
-            {
-                if (_currentState == GameState.MainMenu)
-                {
-                    LoadAndStartLevel(0);
-                }
-                else if (_currentState == GameState.LevelComplete || _currentState == GameState.LevelFailed)
-                {
-                    RestartGame();
-                }
-            }
-
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                if (_currentState == GameState.Playing)
-                {
-                    if (_gameManager != null)
-                    {
-                        _gameManager.PauseGame();
-                    }
-                }
-            }
-
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                if (_currentState == GameState.Playing)
-                {
-                    if (_gameManager != null)
-                    {
-                        _gameManager.ResumeGame();
-                    }
-                }
-            }
-
-            if (_currentState == GameState.MainMenu)
-            {
-                HandleLevelSelection();
-            }
-
-            if (_currentState == GameState.LevelComplete)
-            {
-                HandlePostLevelInput();
-            }
-        }
-
-        private void HandleLevelSelection()
-        {
-            if (_levelManager == null) return;
-
-            for (int i = 0; i < 10; i++)
-            {
-                if (Input.GetKeyDown(KeyCode.Alpha0 + i))
-                {
-                    int levelIndex = i == 0 ? 9 : i - 1;
-                    if (levelIndex < _levelManager.TotalLevelsCount)
-                    {
-                        LoadAndStartLevel(levelIndex);
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[GAME STATE] Level {levelIndex} does not exist");
-                    }
-                    break;
-                }
-            }
-        }
-
-        private void HandlePostLevelInput()
-        {
-            if (Input.GetKeyDown(KeyCode.N))
-            {
-                if (_levelManager != null && _levelManager.HasNextLevel)
-                {
-                    _levelManager.LoadNextLevel();
-                    StartGame();
-                }
-            }
-
-            if (Input.GetKeyDown(KeyCode.M))
-            {
-                GoToMainMenu();
-            }
-        }
 
         [Inject]
         public void Construct(SignalBus signalBus, GameManager gameManager, LevelManager levelManager)
@@ -123,6 +33,26 @@ namespace BusJam.Core
             _signalBus.Subscribe<LevelStartedSignal>(OnLevelStarted);
             _signalBus.Subscribe<LevelCompletedSignal>(OnLevelCompleted);
             _signalBus.Subscribe<LevelFailedSignal>(OnLevelFailed);
+            
+            _signalBus.Subscribe<LoadLevelRequestedSignal>(OnLoadLevelRequested);
+            _signalBus.Subscribe<RestartLevelRequestedSignal>(OnRestartLevelRequested);
+        }
+
+        private void OnRestartLevelRequested()
+        {
+            RestartGame();
+        }
+
+        private void OnLoadLevelRequested(LoadLevelRequestedSignal signal)
+        {
+            if (_levelManager.TotalLevelsCount > signal.LevelIndex)
+            {
+                LoadAndStartLevel(signal.LevelIndex);
+            }
+            else
+            {
+                Debug.LogWarning($"[GAME STATE] Level {signal.LevelIndex} does not exist");
+            }
         }
 
         public void StartGame()
@@ -228,6 +158,9 @@ namespace BusJam.Core
             _signalBus?.TryUnsubscribe<LevelStartedSignal>(OnLevelStarted);
             _signalBus?.TryUnsubscribe<LevelCompletedSignal>(OnLevelCompleted);
             _signalBus?.TryUnsubscribe<LevelFailedSignal>(OnLevelFailed);
+            
+            _signalBus?.TryUnsubscribe<LoadLevelRequestedSignal>(OnLoadLevelRequested);
+            _signalBus?.TryUnsubscribe<RestartLevelRequestedSignal>(OnRestartLevelRequested);
         }
     }
 }

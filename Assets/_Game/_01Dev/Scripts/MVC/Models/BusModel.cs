@@ -57,6 +57,11 @@ namespace BusJam.MVC.Models
             PassengerViews.Remove(passengerView);
         }
 
+        public List<GameObject> GetPassengers()
+        {
+            return new List<GameObject>(PassengerViews);
+        }
+
         public void ClearPassengers()
         {
             PassengerViews.Clear();

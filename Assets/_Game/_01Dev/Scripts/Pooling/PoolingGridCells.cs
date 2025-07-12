@@ -58,7 +58,7 @@ namespace BusJam.Pooling
         
         public void Return(GridCellView obj)
         {
-            if (obj == null) return;
+            if (obj == null || this == null) return;
             
             obj.gameObject.SetActive(false);
             obj.transform.SetParent(transform);
