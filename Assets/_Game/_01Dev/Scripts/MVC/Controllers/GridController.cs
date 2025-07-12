@@ -114,7 +114,6 @@ namespace BusJam.MVC.Controllers
         {
             _busController = busController;
             _benchController = benchController;
-            Debug.Log("Controllers registered with GridController");
         }
         
         #region Grid Management
@@ -254,6 +253,17 @@ namespace BusJam.MVC.Controllers
             if (cell != null) cell.SetEmpty(isEmpty);
         }
 
+        public int GetGridHeight()
+        {
+            return _gridModel?.Height ?? 0;
+        }
+
+        public int GetGridWidth()
+        {
+            return _gridModel?.Width ?? 0;
+        }
+
+
         #endregion
 
         #region Cleanup
@@ -274,6 +284,69 @@ namespace BusJam.MVC.Controllers
         private void UnsubscribeFromEvents()
         {
             _signalBus?.TryUnsubscribe<LevelLoadedSignal>(OnLevelLoaded);
+        }
+
+        #endregion
+
+        #region Pathfinding
+
+        public List<Vector2Int> FindPathToFrontRow(Vector2Int startPos)
+        {
+            var targetRow = _gridModel.Height - 1;
+            
+            
+            // If already at front row, return empty path
+            if (startPos.y == targetRow)
+            {
+                return new List<Vector2Int>();
+            }
+            
+            var visited = new HashSet<Vector2Int>();
+            var queue = new Queue<PathNode>();
+            
+            queue.Enqueue(new PathNode(startPos, new List<Vector2Int> { startPos }));
+            visited.Add(startPos);
+            
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                
+                if (current.Position.y == targetRow)
+                {
+                    var path = current.Path.Skip(1).ToList(); // Skip starting position
+                    return path;
+                }
+                
+                var neighbors = GetDirectNeighbors(current.Position);
+                foreach (var neighbor in neighbors)
+                {
+                    if (visited.Contains(neighbor))
+                        continue;
+                        
+                    if (!IsCellEmpty(neighbor))
+                    {
+                        continue;
+                    }
+                    
+                    visited.Add(neighbor);
+                    var newPath = new List<Vector2Int>(current.Path) { neighbor };
+                    queue.Enqueue(new PathNode(neighbor, newPath));
+                }
+            }
+            
+            return new List<Vector2Int>(); // No path found
+        }
+
+        private class PathNode
+        {
+            public Vector2Int Position { get; }
+            public List<Vector2Int> Path { get; }
+            
+            public PathNode(Vector2Int position, List<Vector2Int> path)
+            {
+                Position = position;
+                Path = path;
+            }
         }
 
         #endregion

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using BusJam.Core;
 using BusJam.Events;
 using BusJam.MVC.Models;
@@ -10,11 +11,19 @@ namespace BusJam.MVC.Views
     public class PassengerView : MonoBehaviour
     {
         [SerializeField] private Renderer passengerRenderer;
+        [SerializeField] private Renderer outlineRenderer;
         [SerializeField] private AnimationCurve moveCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+        [SerializeField] private float moveSpeed = 3f;
+        [SerializeField] private float selectionScaleMultiplier = 1.1f;
+        
         private GameConfig gameConfig;
         private PassengerModel model;
-
         private SignalBus signalBus;
+        
+        private Material originalMaterial;
+        private Material outlineMaterial;
+        private Vector3 originalScale;
+        private bool isAnimating;
 
         private void Awake()
         {
@@ -23,11 +32,59 @@ namespace BusJam.MVC.Views
 
             if (passengerRenderer == null)
                 passengerRenderer = GetComponentInChildren<Renderer>();
+
+            if (outlineRenderer == null)
+            {
+                var outlineGO = new GameObject("Outline");
+                outlineGO.transform.SetParent(transform);
+                outlineGO.transform.localPosition = Vector3.zero;
+                outlineGO.transform.localScale = Vector3.one * 1.05f;
+                
+                outlineRenderer = outlineGO.AddComponent<MeshRenderer>();
+                var meshFilter = outlineGO.AddComponent<MeshFilter>();
+                
+                if (passengerRenderer != null)
+                {
+                    var originalMeshFilter = passengerRenderer.GetComponent<MeshFilter>();
+                    if (originalMeshFilter != null)
+                        meshFilter.mesh = originalMeshFilter.mesh;
+                }
+            }
+
+            originalScale = transform.localScale;
+            SetupMaterials();
+        }
+
+        private void SetupMaterials()
+        {
+            if (passengerRenderer != null)
+            {
+                originalMaterial = passengerRenderer.material;
+            }
+
+            CreateOutlineMaterial();
+            
+            if (outlineRenderer != null)
+            {
+                outlineRenderer.material = outlineMaterial;
+                outlineRenderer.enabled = false;
+            }
+        }
+
+        private void CreateOutlineMaterial()
+        {
+            outlineMaterial = new Material(Shader.Find("Unlit/Color"))
+            {
+                color = Color.yellow
+            };
         }
 
         private void OnDestroy()
         {
             transform.DOKill();
+            
+            if (outlineMaterial != null)
+                DestroyImmediate(outlineMaterial);
         }
 
 
@@ -54,25 +111,81 @@ namespace BusJam.MVC.Views
             }
         }
 
-        public void MoveTo(Vector3 destination)
+        public void MoveToPosition(Vector3 destination, System.Action onComplete = null)
         {
-            var previousState = model.State;
-            model.SetState(PassengerState.Moving);
+            if (isAnimating) return;
 
+            isAnimating = true;
             var distance = Vector3.Distance(transform.position, destination);
-            var duration = distance / 3f;
+            var duration = distance / moveSpeed;
 
             transform.DOMove(destination, duration)
                 .SetEase(moveCurve)
                 .OnComplete(() =>
                 {
-                    if (previousState != PassengerState.Moving) model.SetState(previousState);
+                    isAnimating = false;
+                    model?.CompleteMovement();
+                    onComplete?.Invoke();
                 });
+        }
+
+        public void MoveToGrid(Vector2Int gridPosition, Vector3 worldPosition, System.Action onComplete = null)
+        {
+            if (model != null)
+            {
+                model.StartMovement(gridPosition);
+            }
+            
+            MoveToPosition(worldPosition, onComplete);
+        }
+
+        public void MoveOffGrid(Vector3 destination, System.Action onComplete = null)
+        {
+            if (model != null)
+            {
+                model.SetState(PassengerState.Moving);
+            }
+            
+            MoveToPosition(destination, onComplete);
+        }
+
+        public void MoveAlongPath(List<Vector3> worldPath, System.Action onComplete = null)
+        {
+            if (isAnimating || worldPath.Count == 0) return;
+
+            if (model != null)
+            {
+                model.SetState(PassengerState.Moving);
+            }
+
+            isAnimating = true;
+            var sequence = DOTween.Sequence();
+
+            for (int i = 0; i < worldPath.Count; i++)
+            {
+                var distance = i == 0 ? Vector3.Distance(transform.position, worldPath[i]) : Vector3.Distance(worldPath[i-1], worldPath[i]);
+                var duration = distance / moveSpeed;
+                sequence.Append(transform.DOMove(worldPath[i], duration).SetEase(moveCurve));
+            }
+
+            sequence.OnComplete(() =>
+            {
+                isAnimating = false;
+                if (model != null)
+                {
+                    model.CompleteMovement();
+                }
+                onComplete?.Invoke();
+            });
         }
 
         public void SetSelected(bool selected)
         {
-            model.SetSelected(selected);
+            if (model != null)
+                model.SetSelected(selected);
+
+            if (outlineRenderer != null)
+                outlineRenderer.enabled = selected;
 
             if (selected)
                 PlaySelectionAnimation();
@@ -87,13 +200,14 @@ namespace BusJam.MVC.Views
 
         private void PlaySelectionAnimation()
         {
-            transform.DOScale(1.2f, 0.2f).SetLoops(-1, LoopType.Yoyo);
+            transform.DOKill();
+            transform.DOScale(originalScale * selectionScaleMultiplier, 0.2f).SetLoops(-1, LoopType.Yoyo);
         }
 
         private void StopSelectionAnimation()
         {
             transform.DOKill();
-            transform.DOScale(1f, 0.1f);
+            transform.DOScale(originalScale, 0.1f);
         }
 
         public void PlayPickupAnimation()
@@ -104,6 +218,56 @@ namespace BusJam.MVC.Views
         public PassengerModel GetModel()
         {
             return model;
+        }
+
+        public void ShowValidMoveHint(bool show)
+        {
+            if (outlineRenderer != null)
+            {
+                outlineRenderer.enabled = show;
+                if (show && outlineMaterial != null)
+                {
+                    outlineMaterial.color = Color.green;
+                }
+            }
+        }
+
+        public void ShowInvalidMoveHint(bool show)
+        {
+            if (outlineRenderer != null)
+            {
+                outlineRenderer.enabled = show;
+                if (show && outlineMaterial != null)
+                {
+                    outlineMaterial.color = Color.red;
+                }
+            }
+        }
+
+        public void ResetOutlineColor()
+        {
+            if (outlineMaterial != null)
+            {
+                outlineMaterial.color = Color.yellow;
+            }
+        }
+
+        public bool IsMoving()
+        {
+            return isAnimating || (model != null && model.IsMoving);
+        }
+
+        public void PlayErrorAnimation()
+        {
+            transform.DOShakePosition(0.3f, 0.1f, 10, 90f);
+        }
+
+        public void SetInteractable(bool interactable)
+        {
+            if (model != null)
+            {
+                model.SetState(interactable ? PassengerState.OnGrid : PassengerState.Moving);
+            }
         }
     }
 }

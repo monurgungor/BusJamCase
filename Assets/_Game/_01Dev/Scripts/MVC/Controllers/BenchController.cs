@@ -276,6 +276,12 @@ namespace BusJam.MVC.Controllers
             _slotOccupancy.Clear();
         }
 
+        public Vector3 GetNextQueuePosition()
+        {
+            var nextSlot = GetNextAvailableSlot();
+            return nextSlot != -1 ? GetQueuePosition(nextSlot) : Vector3.zero;
+        }
+
         private void ClearQueueSlots()
         {
             foreach (var slot in _queueSlots)

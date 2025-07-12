@@ -39,13 +39,18 @@ namespace BusJam.MVC.Views
         public void SetEmpty(bool empty)
         {
             IsEmpty = empty;
-            
+            UpdateVisuals();
+        }
+
+        private void UpdateVisuals()
+        {
             if (cellRenderer != null)
             {
-                var color = IsEmpty ? Color.white : Color.gray;
+                Color color = IsEmpty ? Color.white : Color.gray;
                 color.a = 0.1f;
                 cellRenderer.material.color = color;
             }
         }
+
     }
 }
