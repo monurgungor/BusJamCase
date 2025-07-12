@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using BusJam.Core;
-using BusJam.Events;
 using BusJam.MVC.Models;
 using DG.Tweening;
 using UnityEngine;
@@ -11,7 +10,6 @@ namespace BusJam.MVC.Views
     public class PassengerView : MonoBehaviour
     {
         [SerializeField] private Renderer passengerRenderer;
-        [SerializeField] private Renderer outlineRenderer;
         [SerializeField] private AnimationCurve moveCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
         [SerializeField] private float moveSpeed = 3f;
         [SerializeField] private float selectionScaleMultiplier = 1.1f;
@@ -21,10 +19,10 @@ namespace BusJam.MVC.Views
         private SignalBus signalBus;
         
         private Material originalMaterial;
-        private Material outlineMaterial;
         private Vector3 originalScale;
         private bool isAnimating;
         private PassengerAnimationController _animationController;
+        [SerializeField] private Outline outline;
 
         private void Awake()
         {
@@ -34,27 +32,11 @@ namespace BusJam.MVC.Views
             if (passengerRenderer == null)
                 passengerRenderer = GetComponentInChildren<Renderer>();
 
-            if (outlineRenderer == null)
-            {
-                var outlineGO = new GameObject("Outline");
-                outlineGO.transform.SetParent(transform);
-                outlineGO.transform.localPosition = Vector3.zero;
-                outlineGO.transform.localScale = Vector3.one * 1.05f;
-                
-                outlineRenderer = outlineGO.AddComponent<MeshRenderer>();
-                var meshFilter = outlineGO.AddComponent<MeshFilter>();
-                
-                if (passengerRenderer != null)
-                {
-                    var originalMeshFilter = passengerRenderer.GetComponent<MeshFilter>();
-                    if (originalMeshFilter != null)
-                        meshFilter.mesh = originalMeshFilter.mesh;
-                }
-            }
-
             originalScale = transform.localScale;
             SetupMaterials();
             SetupAnimationController();
+            if (outline != null)
+                outline.enabled = false;
         }
 
         private void SetupMaterials()
@@ -63,22 +45,6 @@ namespace BusJam.MVC.Views
             {
                 originalMaterial = passengerRenderer.material;
             }
-
-            CreateOutlineMaterial();
-            
-            if (outlineRenderer != null)
-            {
-                outlineRenderer.material = outlineMaterial;
-                outlineRenderer.enabled = false;
-            }
-        }
-
-        private void CreateOutlineMaterial()
-        {
-            outlineMaterial = new Material(Shader.Find("Unlit/Color"))
-            {
-                color = Color.yellow
-            };
         }
 
         private void SetupAnimationController()
@@ -91,9 +57,6 @@ namespace BusJam.MVC.Views
         private void OnDestroy()
         {
             transform.DOKill();
-            
-            if (outlineMaterial != null)
-                DestroyImmediate(outlineMaterial);
         }
 
 
@@ -219,35 +182,9 @@ namespace BusJam.MVC.Views
             });
         }
 
-        public void SetSelected(bool selected)
-        {
-            if (model != null)
-                model.SetSelected(selected);
-
-            if (outlineRenderer != null)
-                outlineRenderer.enabled = selected;
-
-            if (selected)
-                PlaySelectionAnimation();
-            else
-                StopSelectionAnimation();
-        }
-
         public void SetDragging(bool dragging)
         {
             model.SetDragging(dragging);
-        }
-
-        private void PlaySelectionAnimation()
-        {
-            transform.DOKill();
-            transform.DOScale(originalScale * selectionScaleMultiplier, 0.2f).SetLoops(-1, LoopType.Yoyo);
-        }
-
-        private void StopSelectionAnimation()
-        {
-            transform.DOKill();
-            transform.DOScale(originalScale, 0.1f);
         }
 
         public void PlayPickupAnimation()
@@ -258,38 +195,6 @@ namespace BusJam.MVC.Views
         public PassengerModel GetModel()
         {
             return model;
-        }
-
-        public void ShowValidMoveHint(bool show)
-        {
-            if (outlineRenderer != null)
-            {
-                outlineRenderer.enabled = show;
-                if (show && outlineMaterial != null)
-                {
-                    outlineMaterial.color = Color.green;
-                }
-            }
-        }
-
-        public void ShowInvalidMoveHint(bool show)
-        {
-            if (outlineRenderer != null)
-            {
-                outlineRenderer.enabled = show;
-                if (show && outlineMaterial != null)
-                {
-                    outlineMaterial.color = Color.red;
-                }
-            }
-        }
-
-        public void ResetOutlineColor()
-        {
-            if (outlineMaterial != null)
-            {
-                outlineMaterial.color = Color.yellow;
-            }
         }
 
         public bool IsMoving()
@@ -316,6 +221,18 @@ namespace BusJam.MVC.Views
             {
                 _animationController.SetForwardRotation();
             }
+        }
+
+        public void EnableOutline()
+        {
+            if (outline != null)
+                outline.enabled = true;
+        }
+
+        public void DisableOutline()
+        {
+            if (outline != null)
+                outline.enabled = false;
         }
     }
 }

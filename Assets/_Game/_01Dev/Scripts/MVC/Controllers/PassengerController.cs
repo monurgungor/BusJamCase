@@ -25,7 +25,6 @@ namespace BusJam.MVC.Controllers
         private PassengerFactory _passengerFactory;
         private GameConfig _gameConfig;
         private GridController _gridController;
-        private PassengerView _selectedPassenger;
         private SignalBus _signalBus;
 
         public int TotalPassengerCount => _allPassengers.Count;
@@ -77,6 +76,7 @@ namespace BusJam.MVC.Controllers
         private void OnLevelLoaded(LevelLoadedSignal signal)
         {
             CreatePassengersFromLevelData(signal.LevelData);
+            CalculatePassengerOutlines();
         }
         
         private void OnPassengerClicked(PassengerClickedSignal signal)
@@ -84,25 +84,16 @@ namespace BusJam.MVC.Controllers
             var passenger = GetPassengerFromSignal(signal);
             if (passenger == null || passenger.IsMoving()) return;
 
-            var model = passenger.GetModel();
-            
-            if (_selectedPassenger == passenger)
-            {
-                ClearSelection();
-                return;
-            }
-
-            ClearSelection();
-
             HandlePassengerClick(passenger);
         }
 
         private void HandlePassengerClick(PassengerView passenger)
         {
+            CalculatePassengerOutlines(passenger);
+            
             var model = passenger.GetModel();
             var gridHeight = _gridController.GetGridHeight();
             var isInFrontRow = model.IsInFrontRow(gridHeight);
-            
             
             if (isInFrontRow)
             {
@@ -136,9 +127,7 @@ namespace BusJam.MVC.Controllers
             var currentPos = model.GridPosition;
             
             
-            // Use GridController to find complete path to front row
             var path = _gridController.FindPathToFrontRow(currentPos);
-            
             
             if (path.Count > 0)
             {
@@ -146,14 +135,12 @@ namespace BusJam.MVC.Controllers
             }
             else
             {
-                // Check if passenger is already at front row
                 if (model.IsInFrontRow(_gridController.GetGridHeight()))
                 {
                     ContinueToDestination(passenger);
                 }
                 else
                 {
-                    // No path available - passenger can't move
                     passenger.PlayErrorAnimation();
                 }
             }
@@ -165,7 +152,6 @@ namespace BusJam.MVC.Controllers
             var startPos = model.GridPosition;
             var finalPos = gridPath[gridPath.Count - 1];
             
-            // Convert grid path to world positions
             var worldPath = gridPath.Select(gridPos => _gridController.GridToWorldPosition(gridPos)).ToList();
             
             _passengerGrid.Remove(startPos);
@@ -178,6 +164,7 @@ namespace BusJam.MVC.Controllers
             passenger.MoveAlongPath(worldPath, () =>
             {
                 ContinueToDestination(passenger);
+                CalculatePassengerOutlines();
             });
         }
         
@@ -211,26 +198,21 @@ namespace BusJam.MVC.Controllers
             }
         }
 
-        private void SelectPassengerForMovement(PassengerView passenger)
-        {
-            _selectedPassenger = passenger;
-            passenger.SetSelected(true);
-        }
-
         private void OnGridCellClicked(GridCellClickedSignal signal)
         {
-            if (_selectedPassenger == null) return;
+            if (!_passengerGrid.TryGetValue(signal.GridPosition, out var passenger) || passenger == null)
+                return;
 
             var targetPosition = signal.GridPosition;
-            var model = _selectedPassenger.GetModel();
+            var model = passenger.GetModel();
 
             if (CanMoveToPosition(model, targetPosition))
             {
-                ExecuteGridMovement(_selectedPassenger, targetPosition, signal.WorldPosition);
+                ExecuteGridMovement(passenger, targetPosition, signal.WorldPosition);
             }
             else
             {
-                _selectedPassenger.PlayErrorAnimation();
+                passenger.PlayErrorAnimation();
             }
         }
 
@@ -259,9 +241,9 @@ namespace BusJam.MVC.Controllers
             passenger.MoveToGrid(targetPosition, worldPosition, () =>
             {
                 CheckExitConditions(passenger);
+                CalculatePassengerOutlines();
             });
             
-            ClearSelection();
         }
 
         private void CheckExitConditions(PassengerView passenger)
@@ -327,6 +309,7 @@ namespace BusJam.MVC.Controllers
                 {
                     passenger.GetModel().SetState(PassengerState.OnBus);
                     passenger.PlayPickupAnimation();
+                    passenger.DisableOutline();
                 }
                 else
                 {
@@ -352,6 +335,7 @@ namespace BusJam.MVC.Controllers
                 {
                     passenger.GetModel().SetState(PassengerState.InQueue);
                     passenger.PlayPickupAnimation();
+                    passenger.DisableOutline();
                 }
                 else
                 {
@@ -397,16 +381,6 @@ namespace BusJam.MVC.Controllers
             return passenger;
         }
 
-        private void ClearSelection()
-        {
-            if (_selectedPassenger != null)
-            {
-                _selectedPassenger.SetSelected(false);
-                _selectedPassenger.ResetOutlineColor();
-                _selectedPassenger = null;
-            }
-        }
-
         private void RemovePassengerFromGrid(PassengerView passenger)
         {
             var model = passenger.GetModel();
@@ -424,9 +398,6 @@ namespace BusJam.MVC.Controllers
 
         private void RemovePassengerFromTracking(PassengerView passenger)
         {
-            if (_selectedPassenger == passenger) 
-                _selectedPassenger = null;
-
             var model = passenger.GetModel();
             if (model.IsOnGrid)
             {
@@ -479,7 +450,6 @@ namespace BusJam.MVC.Controllers
 
         private void ClearAllPassengers()
         {
-            _selectedPassenger = null;
             foreach (var passenger in _allPassengers)
                 if (passenger != null)
                     _passengerFactory.Release(passenger);
@@ -507,5 +477,30 @@ namespace BusJam.MVC.Controllers
         }
 
         #endregion
+
+        private void CalculatePassengerOutlines(PassengerView exclude = null)
+        {
+            foreach (var p in _allPassengers)
+            {
+                if (p == exclude)
+                {
+                    p.DisableOutline();
+                    continue;
+                }
+                var m = p.GetModel();
+                if (m.IsOnGrid)
+                {
+                    var path = _gridController.FindPathToFrontRow(m.GridPosition);
+                    if (path.Count > 0)
+                        p.EnableOutline();
+                    else
+                        p.DisableOutline();
+                }
+                else
+                {
+                    p.DisableOutline();
+                }
+            }
+        }
     }
 }

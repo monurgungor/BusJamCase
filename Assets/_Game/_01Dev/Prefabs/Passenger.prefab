@@ -469,6 +469,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4903841250070741244}
   - component: {fileID: 2834272070493214787}
+  - component: {fileID: 7681688479722828684}
   m_Layer: 0
   m_Name: stickman-low-poly@Idle
   m_TagString: Untagged
@@ -514,6 +515,24 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &7681688479722828684
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5712289522384869958}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  outlineMode: 3
+  outlineColor: {r: 0.11320752, g: 0.11320752, b: 0.11320752, a: 1}
+  outlineWidth: 1.5
+  precomputeOutline: 1
+  bakeKeys: []
+  bakeValues: []
 --- !u!1 &6225645167580241979
 GameObject:
   m_ObjectHideFlags: 0
@@ -774,7 +793,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   passengerRenderer: {fileID: 8087080245739307500}
-  outlineRenderer: {fileID: 0}
   moveCurve:
     serializedVersion: 2
     m_Curve:
@@ -801,6 +819,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   moveSpeed: 3
   selectionScaleMultiplier: 1.1
+  outline: {fileID: 7681688479722828684}
 --- !u!114 &1745094143163114547
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -294,7 +294,6 @@ namespace BusJam.MVC.Controllers
         {
             var targetRow = 0;
             
-            
             if (startPos.y == targetRow)
             {
                 return new List<Vector2Int>();

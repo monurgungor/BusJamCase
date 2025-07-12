@@ -72,7 +72,6 @@ namespace BusJam.Pooling
             obj.transform.localRotation = Quaternion.identity;
             obj.transform.localScale = Vector3.one;
             
-            obj.SetSelected(false);
             obj.SetDragging(false);
             
             activeObjects.Remove(obj);
