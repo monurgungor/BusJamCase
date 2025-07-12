@@ -1,5 +1,7 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using System.Linq;
+using BusJam.Core;
 using BusJam.Data;
 using UnityEditor;
 using UnityEditorInternal;
@@ -8,15 +10,8 @@ using UnityEngine;
 [CustomEditor(typeof(LevelData))]
 public class LevelDataEditor : Editor
 {
-    private static readonly Dictionary<PassengerColor, Color> ColorOf = new()
-    {
-        { PassengerColor.Red, Color.red },
-        { PassengerColor.Blue, Color.blue },
-        { PassengerColor.Green, Color.green },
-        { PassengerColor.Yellow, Color.yellow },
-        { PassengerColor.Purple, Color.magenta },
-        { PassengerColor.Orange, new Color(1f, 0.5f, 0f) }
-    };
+    private static GameConfig _gameConfig;
+    private static Dictionary<PassengerColor, Color> _colorCache;
 
     private static readonly Color VoidGrey = new(0.25f, 0.25f, 0.25f);
 
@@ -24,7 +19,7 @@ public class LevelDataEditor : Editor
     private ReorderableList _busList;
 
     private LevelData _level;
-    private SerializedProperty _rowsProp, _colsProp, _cellsProp, _busesProp, _timeLimitProp, _waitingAreaSizeProp;
+    private SerializedProperty _rowsProp, _colsProp, _cellsProp, _busQueueProp, _timeLimitProp, _waitingAreaSizeProp;
 
     private Vector2 _scrollPosition;
     private SerializedObject _so;
@@ -99,17 +94,25 @@ public class LevelDataEditor : Editor
         _rowsProp = _so.FindProperty(nameof(LevelData.rows));
         _colsProp = _so.FindProperty(nameof(LevelData.cols));
         _cellsProp = _so.FindProperty(nameof(LevelData.cells));
-        _busesProp = _so.FindProperty(nameof(LevelData.buses));
+        _busQueueProp = _so.FindProperty(nameof(LevelData.busQueue));
         _timeLimitProp = _so.FindProperty(nameof(LevelData.timeLimit));
         _waitingAreaSizeProp = _so.FindProperty(nameof(LevelData.waitingAreaSize));
 
-        _busList = new ReorderableList(_so, _busesProp, true, true, true, true)
+        _busList = new ReorderableList(_so, _busQueueProp, true, true, true, true)
         {
             drawHeaderCallback = r => EditorGUI.LabelField(r, "Bus Queue (front first)"),
             drawElementCallback = (r, i, _, _) =>
             {
-                var elem = _busesProp.GetArrayElementAtIndex(i);
-                elem.enumValueIndex = (int)(PassengerColor)EditorGUI.EnumPopup(r, (PassengerColor)elem.enumValueIndex);
+                var elem = _busQueueProp.GetArrayElementAtIndex(i);
+                var colorProp = elem.FindPropertyRelative("busColor");
+                var capacityProp = elem.FindPropertyRelative("capacity");
+                
+                var colorRect = new Rect(r.x, r.y, r.width * 0.5f, r.height);
+                var capacityRect = new Rect(r.x + r.width * 0.55f, r.y, r.width * 0.4f, r.height);
+                
+                colorProp.enumValueIndex = (int)(PassengerColor)EditorGUI.EnumPopup(colorRect, (PassengerColor)colorProp.enumValueIndex);
+                EditorGUI.LabelField(new Rect(capacityRect.x - 50, capacityRect.y, 45, capacityRect.height), "Cap:");
+                capacityProp.intValue = EditorGUI.IntField(capacityRect, capacityProp.intValue);
             }
         };
     }
@@ -169,16 +172,15 @@ public class LevelDataEditor : Editor
 
     private void DrawPalette()
     {
-        GUILayout.Label("Brush");
-
         EditorGUILayout.BeginHorizontal();
         DrawBrush(CellType.Empty, PassengerColor.Red, "Empty");
         DrawBrush(CellType.Void, PassengerColor.Red, "Void");
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.BeginHorizontal();
-        foreach (var kv in ColorOf)
-            DrawBrush(CellType.Passenger, kv.Key, kv.Key.ToString());
+        var colors = System.Enum.GetValues(typeof(PassengerColor));
+        foreach (PassengerColor color in colors)
+            DrawBrush(CellType.Passenger, color, color.ToString());
         EditorGUILayout.EndHorizontal();
     }
 
@@ -212,8 +214,35 @@ public class LevelDataEditor : Editor
         {
             CellType.Empty => Color.white,
             CellType.Void => VoidGrey,
-            CellType.Passenger => ColorOf[id],
+            CellType.Passenger => GetPassengerColor(id),
             _ => Color.magenta
+        };
+    }
+
+    private static Color GetPassengerColor(PassengerColor color)
+    {
+        if (_gameConfig == null)
+        {
+            _gameConfig = AssetDatabase.FindAssets("t:GameConfig")
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Select(AssetDatabase.LoadAssetAtPath<GameConfig>)
+                .FirstOrDefault();
+        }
+
+        if (_gameConfig != null)
+        {
+            return _gameConfig.GetPassengerColor(color);
+        }
+
+        return color switch
+        {
+            PassengerColor.Red => Color.red,
+            PassengerColor.Blue => Color.blue,
+            PassengerColor.Green => Color.green,
+            PassengerColor.Yellow => Color.yellow,
+            PassengerColor.Purple => Color.magenta,
+            PassengerColor.Orange => new Color(1f, 0.5f, 0f),
+            _ => Color.white
         };
     }
 }

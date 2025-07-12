@@ -224,6 +224,8 @@ namespace BusJam.MVC.Controllers
             
             if (!_gridController.IsValidPosition(targetPosition)) return false;
             
+            if (_gridController.IsVoidCell(targetPosition)) return false;
+            
             return true;
         }
 
@@ -437,6 +439,7 @@ namespace BusJam.MVC.Controllers
         {
             if (_passengerGrid.ContainsKey(gridPosition)) return;
             if (!_gridController.IsValidPosition(gridPosition)) return;
+            if (_gridController.IsVoidCell(gridPosition)) return;
 
             var worldPosition = _gridController.GridToWorldPosition(gridPosition);
             var passengerView = _passengerFactory.Create(color, gridPosition, worldPosition, passengerParent);

@@ -47,7 +47,7 @@ namespace BusJam.MVC.Views
 
             if (passengerSeats == null || passengerSeats.Length == 0) CreateDefaultSeats();
 
-            SetupMaterialAndColor();
+            SetupColor();
 
             var startPosition = model.ArrivalPosition + Vector3.back * 10f;
             transform.position = startPosition;
@@ -71,7 +71,7 @@ namespace BusJam.MVC.Views
             }
         }
 
-        private void SetupMaterialAndColor()
+        private void SetupColor()
         {
             if (busRenderer != null && gameConfig != null)
             {
@@ -107,7 +107,6 @@ namespace BusJam.MVC.Views
 
             if (model.AddPassenger(passengerView))
             {
-                // Animate passenger to seat position
                 if (model.CurrentPassengerCount <= passengerSeats.Length)
                 {
                     var seat = passengerSeats[model.CurrentPassengerCount - 1];
@@ -115,19 +114,16 @@ namespace BusJam.MVC.Views
                         .SetEase(Ease.OutCubic)
                         .OnComplete(() =>
                         {
-                            // Hide passenger visual or make them part of bus
                             var renderer = passengerView.GetComponent<Renderer>();
                             if (renderer != null) renderer.enabled = false;
                         });
                 }
                 else
                 {
-                    // If no seat available, just hide the passenger
                     var renderer = passengerView.GetComponent<Renderer>();
                     if (renderer != null) renderer.enabled = false;
                 }
 
-                // Play boarding animation/effects
                 passengerView.GetComponent<PassengerView>()?.PlayPickupAnimation();
 
                 if (model.IsFull) StartDeparture();

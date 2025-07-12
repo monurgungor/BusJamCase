@@ -36,6 +36,7 @@ namespace BusJam.Core
         {
             _allLevels.Clear();
             
+#if UNITY_EDITOR
             var guids = UnityEditor.AssetDatabase.FindAssets("t:LevelData", new[] { "Assets/_Game" });
             
             foreach (var guid in guids)
@@ -48,6 +49,16 @@ namespace BusJam.Core
                     _allLevels.Add(levelData);
                 }
             }
+#else
+            var levelDataAssets = Resources.LoadAll<LevelData>("Levels");
+            foreach (var levelData in levelDataAssets)
+            {
+                if (levelData != null && levelData.ValidateLevel())
+                {
+                    _allLevels.Add(levelData);
+                }
+            }
+#endif
             
             _allLevels.Sort((a, b) => string.Compare(a.name, b.name, System.StringComparison.Ordinal));
             

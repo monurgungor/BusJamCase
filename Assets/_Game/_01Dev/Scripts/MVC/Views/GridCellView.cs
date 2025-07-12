@@ -13,6 +13,7 @@ namespace BusJam.MVC.Views
         public Vector2Int GridPosition => gridPosition;
         public Vector3 WorldPosition { get; private set; }
         public bool IsEmpty { get; private set; }
+        public bool IsVoid { get; private set; }
 
         private void Awake()
         {
@@ -26,14 +27,16 @@ namespace BusJam.MVC.Views
             this.gameConfig = gameConfig;
         }
 
-        public void Initialize(Vector2Int gridPos, Vector3 worldPos)
+        public void Initialize(Vector2Int gridPos, Vector3 worldPos, bool isVoid = false)
         {
             gridPosition = gridPos;
             WorldPosition = worldPos;
-            IsEmpty = true;
+            IsEmpty = !isVoid;
+            IsVoid = isVoid;
 
             transform.position = WorldPosition;
             name = $"GridCell_{gridPosition.x}_{gridPosition.y}";
+            UpdateVisuals();
         }
 
         public void SetEmpty(bool empty)
@@ -46,8 +49,16 @@ namespace BusJam.MVC.Views
         {
             if (cellRenderer != null)
             {
-                Color color = IsEmpty ? Color.white : Color.gray;
-                color.a = 0.1f;
+                Color color;
+                if (IsVoid)
+                {
+                    color = new Color(0.25f, 0.25f, 0.25f, 0.8f);
+                }
+                else
+                {
+                    color = IsEmpty ? Color.white : Color.gray;
+                    color.a = 0.1f;
+                }
                 cellRenderer.material.color = color;
             }
         }

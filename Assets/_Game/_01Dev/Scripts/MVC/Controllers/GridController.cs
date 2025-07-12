@@ -131,7 +131,8 @@ namespace BusJam.MVC.Controllers
                 levelData.cols,
                 levelData.rows,
                 _gameConfig.CellSize,
-                GridOffset);
+                GridOffset,
+                levelData);
         }
 
         private void GenerateGrid()
@@ -148,6 +149,7 @@ namespace BusJam.MVC.Controllers
         {
             var gridPosition = new Vector2Int(x, y);
             var worldPosition = GridToWorldPosition(gridPosition);
+            var isVoid = IsVoidCell(gridPosition);
 
             var cell = _gridCellPool.Get();
             if (cell == null)
@@ -156,7 +158,7 @@ namespace BusJam.MVC.Controllers
                 return;
             }
 
-            cell.Initialize(gridPosition, worldPosition);
+            cell.Initialize(gridPosition, worldPosition, isVoid);
             cell.transform.SetParent(gridParent);
             cell.transform.position = worldPosition;
 
@@ -229,7 +231,12 @@ namespace BusJam.MVC.Controllers
         public bool IsCellEmpty(Vector2Int gridPosition)
         {
             var cell = GetCellAt(gridPosition);
-            return cell != null && cell.IsEmpty;
+            return cell != null && cell.IsEmpty && !IsVoidCell(gridPosition);
+        }
+
+        public bool IsVoidCell(Vector2Int gridPosition)
+        {
+            return _gridModel?.IsVoidCell(gridPosition) ?? false;
         }
 
         public List<Vector2Int> GetDirectNeighbors(Vector2Int gridPosition)

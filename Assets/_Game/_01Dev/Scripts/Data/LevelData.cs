@@ -42,7 +42,7 @@ namespace BusJam.Data
     }
 
     [Serializable]
-    public class BusData
+    public class BusQueueEntry
     {
         public PassengerColor busColor;
         public int capacity = 4;
@@ -58,14 +58,14 @@ namespace BusJam.Data
         public int waitingAreaSize = 10;
 
         public Cell[] cells = new Cell[0];
-        public PassengerColor[] buses = new PassengerColor[0];
+        public BusQueueEntry[] busQueue = new BusQueueEntry[0];
 
         public bool ValidateLevel()
         {
             if (GetTotalPassengerCount() == 0)
                 return false;
 
-            if (buses.Length == 0)
+            if (busQueue.Length == 0)
                 return false;
 
             var usedColors = new HashSet<PassengerColor>();
@@ -73,8 +73,8 @@ namespace BusJam.Data
                 if (cell != null && cell.type == CellType.Passenger)
                     usedColors.Add(cell.colour);
 
-            foreach (var busColor in buses)
-                if (!usedColors.Contains(busColor))
+            foreach (var bus in busQueue)
+                if (!usedColors.Contains(bus.busColor))
                     return false;
 
             return true;
@@ -100,7 +100,7 @@ namespace BusJam.Data
 
         public int GetBusCount()
         {
-            return buses.Length;
+            return busQueue.Length;
         }
 
         public List<PassengerData> GetInitialPassengers()
@@ -121,16 +121,15 @@ namespace BusJam.Data
             return passengers;
         }
 
-        public List<BusData> GetBusSequence()
+        public List<BusQueueEntry> GetBusSequence()
         {
-            var busData = new List<BusData>();
-            for (var i = 0; i < buses.Length; i++)
-                busData.Add(new BusData
-                {
-                    busColor = buses[i],
-                    capacity = 4,
-                    arrivalTime = i * 5f
-                });
+            var busData = new List<BusQueueEntry>();
+            for (var i = 0; i < busQueue.Length; i++)
+            {
+                var entry = busQueue[i];
+                entry.arrivalTime = i * 5f;
+                busData.Add(entry);
+            }
             return busData;
         }
     }

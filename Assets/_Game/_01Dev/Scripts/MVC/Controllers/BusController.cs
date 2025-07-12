@@ -17,7 +17,7 @@ namespace BusJam.MVC.Controllers
         [SerializeField] private Transform busArrivalPoint;
         [SerializeField] private Transform busDeparturePoint;
         private readonly List<BusView> _activeBuses = new();
-        private readonly Queue<BusData> _busSequence = new();
+        private readonly Queue<BusQueueEntry> _busSequence = new();
         private BenchController _benchController;
         private PoolingBuses _busPool;
         private GameConfig _gameConfig;
@@ -123,7 +123,7 @@ namespace BusJam.MVC.Controllers
             if (_busSequence.Count == 0 && _activeBuses.Count == 0) _signalBus.Fire<AllBusesCompletedSignal>();
         }
 
-        private void SetupBusSequence(List<BusData> busDataList)
+        private void SetupBusSequence(List<BusQueueEntry> busDataList)
         {
             _busSequence.Clear();
             ClearAllBuses();
@@ -145,7 +145,7 @@ namespace BusJam.MVC.Controllers
             }
         }
 
-        private void SpawnBus(BusData busData)
+        private void SpawnBus(BusQueueEntry busData)
         {
             var busView = _busPool.Get();
             if (busView == null)

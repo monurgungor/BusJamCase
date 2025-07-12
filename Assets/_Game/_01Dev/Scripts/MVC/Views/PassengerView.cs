@@ -18,7 +18,6 @@ namespace BusJam.MVC.Views
         private PassengerModel model;
         private SignalBus signalBus;
         
-        private Material originalMaterial;
         private Vector3 originalScale;
         private bool isAnimating;
         private PassengerAnimationController _animationController;
@@ -33,18 +32,9 @@ namespace BusJam.MVC.Views
                 passengerRenderer = GetComponentInChildren<Renderer>();
 
             originalScale = transform.localScale;
-            SetupMaterials();
             SetupAnimationController();
             if (outline != null)
                 outline.enabled = false;
-        }
-
-        private void SetupMaterials()
-        {
-            if (passengerRenderer != null)
-            {
-                originalMaterial = passengerRenderer.material;
-            }
         }
 
         private void SetupAnimationController()
@@ -70,7 +60,7 @@ namespace BusJam.MVC.Views
         public void Initialize(PassengerModel passengerModel)
         {
             model = passengerModel;
-            SetupMaterialAndColor();
+            SetupColor();
             name = $"Passenger_{model.Color}_{model.GridPosition.x}_{model.GridPosition.y}";
             if (_animationController != null)
             {
@@ -78,7 +68,7 @@ namespace BusJam.MVC.Views
             }
         }
         
-        private void SetupMaterialAndColor()
+        private void SetupColor()
         {
             if (passengerRenderer != null && gameConfig != null)
             {
