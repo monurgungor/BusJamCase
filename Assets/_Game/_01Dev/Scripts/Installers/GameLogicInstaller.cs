@@ -1,6 +1,7 @@
 using BusJam.Core;
 using BusJam.Events;
 using BusJam.MVC.Controllers;
+using BusJam.UI;
 using UnityEngine;
 using Zenject;
 
@@ -15,6 +16,7 @@ namespace BusJam.Installers
             InstallSignals();
             InstallPooling();
             InstallManagers();
+            InstallUI();
         }
 
         private void InstallPooling()
@@ -137,6 +139,16 @@ namespace BusJam.Installers
             {
                 Container.BindInterfacesAndSelfTo<InputManager>().FromInstance(inputManager).AsSingle();
                 Container.QueueForInject(inputManager);
+            }
+        }
+
+        private void InstallUI()
+        {
+            var uiManager = FindObjectOfType<UIManager>();
+            if (uiManager != null)
+            {
+                Container.BindInterfacesAndSelfTo<UIManager>().FromInstance(uiManager).AsSingle();
+                Container.QueueForInject(uiManager);
             }
         }
     }
