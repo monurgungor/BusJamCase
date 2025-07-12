@@ -154,6 +154,8 @@ namespace BusJam.MVC.Controllers
 
             var targetPosition = GetQueuePosition(slotIndex);
             AnimatePassengerToQueue(passengerGo, targetPosition);
+            
+            passengerView.ResetToForwardRotation();
 
             return true;
         }

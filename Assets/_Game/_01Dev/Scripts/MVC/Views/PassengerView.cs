@@ -24,6 +24,7 @@ namespace BusJam.MVC.Views
         private Material outlineMaterial;
         private Vector3 originalScale;
         private bool isAnimating;
+        private PassengerAnimationController _animationController;
 
         private void Awake()
         {
@@ -53,6 +54,7 @@ namespace BusJam.MVC.Views
 
             originalScale = transform.localScale;
             SetupMaterials();
+            SetupAnimationController();
         }
 
         private void SetupMaterials()
@@ -79,6 +81,13 @@ namespace BusJam.MVC.Views
             };
         }
 
+        private void SetupAnimationController()
+        {
+            _animationController = GetComponent<PassengerAnimationController>();
+            if (_animationController == null)
+                _animationController = GetComponentInChildren<PassengerAnimationController>();
+        }
+
         private void OnDestroy()
         {
             transform.DOKill();
@@ -100,8 +109,12 @@ namespace BusJam.MVC.Views
             model = passengerModel;
             SetupMaterialAndColor();
             name = $"Passenger_{model.Color}_{model.GridPosition.x}_{model.GridPosition.y}";
+            if (_animationController != null)
+            {
+                _animationController.SetForwardRotation();
+            }
         }
-
+        
         private void SetupMaterialAndColor()
         {
             if (passengerRenderer != null && gameConfig != null)
@@ -119,11 +132,20 @@ namespace BusJam.MVC.Views
             var distance = Vector3.Distance(transform.position, destination);
             var duration = distance / moveSpeed;
 
+            if (_animationController != null)
+            {
+                var direction = (destination - transform.position).normalized;
+                _animationController.SetMovementDirection(direction);
+                _animationController.SetMoving(true);
+            }
+
             transform.DOMove(destination, duration)
                 .SetEase(moveCurve)
                 .OnComplete(() =>
                 {
                     isAnimating = false;
+                    if (_animationController != null)
+                        _animationController.SetMoving(false);
                     model?.CompleteMovement();
                     onComplete?.Invoke();
                 });
@@ -159,18 +181,36 @@ namespace BusJam.MVC.Views
             }
 
             isAnimating = true;
+            
+            if (_animationController != null)
+                _animationController.SetMoving(true);
+
             var sequence = DOTween.Sequence();
 
-            for (int i = 0; i < worldPath.Count; i++)
+            for (var i = 0; i < worldPath.Count; i++)
             {
                 var distance = i == 0 ? Vector3.Distance(transform.position, worldPath[i]) : Vector3.Distance(worldPath[i-1], worldPath[i]);
                 var duration = distance / moveSpeed;
+                
+                var targetPos = worldPath[i];
+                var currentPos = i == 0 ? transform.position : worldPath[i-1];
+                var direction = (targetPos - currentPos).normalized;
+                
+                sequence.AppendCallback(() => {
+                    if (_animationController != null)
+                        _animationController.SetMovementDirection(direction);
+                });
+                
                 sequence.Append(transform.DOMove(worldPath[i], duration).SetEase(moveCurve));
             }
 
             sequence.OnComplete(() =>
             {
                 isAnimating = false;
+                
+                if (_animationController != null)
+                    _animationController.SetMoving(false);
+                
                 if (model != null)
                 {
                     model.CompleteMovement();
@@ -267,6 +307,14 @@ namespace BusJam.MVC.Views
             if (model != null)
             {
                 model.SetState(interactable ? PassengerState.OnGrid : PassengerState.Moving);
+            }
+        }
+
+        public void ResetToForwardRotation()
+        {
+            if (_animationController != null)
+            {
+                _animationController.SetForwardRotation();
             }
         }
     }
