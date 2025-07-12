@@ -1,0 +1,152 @@
+using BusJam.Data;
+using BusJam.Events;
+using UnityEngine;
+using Zenject;
+
+namespace BusJam.Core
+{
+    public class LevelTimer : MonoBehaviour, ITickable, IInitializable
+    {
+        private SignalBus _signalBus;
+        private GameStateManager _gameStateManager;
+        
+        private float _remainingTime;
+        private float _totalTime;
+        private bool _isRunning;
+        private bool _isPaused;
+
+        public float RemainingTime => _remainingTime;
+        public float TotalTime => _totalTime;
+        public float ElapsedTime => _totalTime - _remainingTime;
+        public bool IsRunning => _isRunning;
+        public bool IsPaused => _isPaused;
+
+        public void Initialize()
+        {
+            SubscribeToEvents();
+        }
+
+        [Inject]
+        public void Construct(SignalBus signalBus, GameStateManager gameStateManager)
+        {
+            _signalBus = signalBus;
+            _gameStateManager = gameStateManager;
+        }
+
+        private void SubscribeToEvents()
+        {
+            _signalBus.Subscribe<LevelStartedSignal>(OnLevelStarted);
+            _signalBus.Subscribe<LevelCompletedSignal>(OnLevelCompleted);
+            _signalBus.Subscribe<LevelFailedSignal>(OnLevelFailed);
+            _signalBus.Subscribe<GamePausedSignal>(OnGamePaused);
+            _signalBus.Subscribe<GameResumedSignal>(OnGameResumed);
+            _signalBus.Subscribe<LevelChangedSignal>(OnLevelChanged);
+        }
+
+        public void Tick()
+        {
+            if (!_isRunning || _isPaused) return;
+
+            _remainingTime -= Time.deltaTime;
+
+            if (_remainingTime <= 0f)
+            {
+                _remainingTime = 0f;
+                TimerExpired();
+            }
+
+            _signalBus.Fire(new TimerUpdatedSignal(_remainingTime, _totalTime, ElapsedTime));
+        }
+
+        public void StartTimer(float timeLimit)
+        {
+            _totalTime = timeLimit;
+            _remainingTime = timeLimit;
+            _isRunning = true;
+            _isPaused = false;
+
+            _signalBus.Fire(new TimerStartedSignal(_totalTime));
+        }
+
+        public void StopTimer()
+        {
+            _isRunning = false;
+            _isPaused = false;
+            _remainingTime = 0f;
+
+            _signalBus.Fire<TimerStoppedSignal>();
+        }
+
+        public void PauseTimer()
+        {
+            if (!_isRunning) return;
+
+            _isPaused = true;
+            _signalBus.Fire<TimerPausedSignal>();
+        }
+
+        public void ResumeTimer()
+        {
+            if (!_isRunning) return;
+
+            _isPaused = false;
+            _signalBus.Fire<TimerResumedSignal>();
+        }
+
+        private void TimerExpired()
+        {
+            _isRunning = false;
+            _signalBus.Fire<TimerExpiredSignal>();
+            _signalBus.Fire<LevelFailedSignal>();
+            Debug.LogWarning("[TIMER] Time's up! Level failed");
+        }
+
+        private void OnLevelStarted(LevelStartedSignal signal)
+        {
+            if (signal.LevelData != null && signal.LevelData.timeLimit > 0f)
+            {
+                StartTimer(signal.LevelData.timeLimit);
+            }
+        }
+
+        private void OnLevelCompleted()
+        {
+            StopTimer();
+        }
+
+        private void OnLevelFailed()
+        {
+            StopTimer();
+        }
+
+        private void OnGamePaused()
+        {
+            PauseTimer();
+        }
+
+        private void OnGameResumed()
+        {
+            ResumeTimer();
+        }
+
+        private void OnLevelChanged(LevelChangedSignal signal)
+        {
+            StopTimer();
+        }
+
+        private void OnDestroy()
+        {
+            UnsubscribeFromEvents();
+        }
+
+        private void UnsubscribeFromEvents()
+        {
+            _signalBus?.TryUnsubscribe<LevelStartedSignal>(OnLevelStarted);
+            _signalBus?.TryUnsubscribe<LevelCompletedSignal>(OnLevelCompleted);
+            _signalBus?.TryUnsubscribe<LevelFailedSignal>(OnLevelFailed);
+            _signalBus?.TryUnsubscribe<GamePausedSignal>(OnGamePaused);
+            _signalBus?.TryUnsubscribe<GameResumedSignal>(OnGameResumed);
+            _signalBus?.TryUnsubscribe<LevelChangedSignal>(OnLevelChanged);
+        }
+    }
+}

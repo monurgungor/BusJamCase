@@ -8,6 +8,7 @@ namespace BusJam.Core
     {
         private SignalBus _signalBus;
         private GameManager _gameManager;
+        private LevelManager _levelManager;
         private GameState _currentState = GameState.MainMenu;
 
         public GameState CurrentState => _currentState;
@@ -29,20 +30,92 @@ namespace BusJam.Core
             {
                 if (_currentState == GameState.MainMenu)
                 {
-                    StartGame();
+                    LoadAndStartLevel(0);
                 }
                 else if (_currentState == GameState.LevelComplete || _currentState == GameState.LevelFailed)
                 {
                     RestartGame();
                 }
             }
+
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                if (_currentState == GameState.Playing)
+                {
+                    if (_gameManager != null)
+                    {
+                        _gameManager.PauseGame();
+                    }
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                if (_currentState == GameState.Playing)
+                {
+                    if (_gameManager != null)
+                    {
+                        _gameManager.ResumeGame();
+                    }
+                }
+            }
+
+            if (_currentState == GameState.MainMenu)
+            {
+                HandleLevelSelection();
+            }
+
+            if (_currentState == GameState.LevelComplete)
+            {
+                HandlePostLevelInput();
+            }
+        }
+
+        private void HandleLevelSelection()
+        {
+            if (_levelManager == null) return;
+
+            for (int i = 0; i < 10; i++)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha0 + i))
+                {
+                    int levelIndex = i == 0 ? 9 : i - 1;
+                    if (levelIndex < _levelManager.TotalLevelsCount)
+                    {
+                        LoadAndStartLevel(levelIndex);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[GAME STATE] Level {levelIndex} does not exist");
+                    }
+                    break;
+                }
+            }
+        }
+
+        private void HandlePostLevelInput()
+        {
+            if (Input.GetKeyDown(KeyCode.N))
+            {
+                if (_levelManager != null && _levelManager.HasNextLevel)
+                {
+                    _levelManager.LoadNextLevel();
+                    StartGame();
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.M))
+            {
+                GoToMainMenu();
+            }
         }
 
         [Inject]
-        public void Construct(SignalBus signalBus, GameManager gameManager)
+        public void Construct(SignalBus signalBus, GameManager gameManager, LevelManager levelManager)
         {
             _signalBus = signalBus;
             _gameManager = gameManager;
+            _levelManager = levelManager;
         }
 
         private void SubscribeToEvents()
@@ -54,16 +127,22 @@ namespace BusJam.Core
 
         public void StartGame()
         {
-            Debug.Log("[GAME STATE] Starting game from main menu");
             if (_gameManager != null)
             {
                 _gameManager.StartLevel();
             }
         }
 
+        public void LoadAndStartLevel(int levelIndex)
+        {
+            if (_levelManager != null)
+            {
+                _levelManager.LoadLevel(levelIndex);
+            }
+        }
+
         public void RestartGame()
         {
-            Debug.Log("[GAME STATE] Restarting game");
             if (_gameManager != null)
             {
                 _gameManager.RestartLevel();

@@ -220,4 +220,88 @@ namespace BusJam.Events
     public struct EnterLevelFailedSignal
     {
     }
+
+    public struct TimerUpdatedSignal
+    {
+        public readonly float RemainingTime;
+        public readonly float TotalTime;
+        public readonly float ElapsedTime;
+
+        public TimerUpdatedSignal(float remainingTime, float totalTime, float elapsedTime)
+        {
+            RemainingTime = remainingTime;
+            TotalTime = totalTime;
+            ElapsedTime = elapsedTime;
+        }
+    }
+
+    public struct TimerExpiredSignal
+    {
+    }
+
+    public struct TimerStartedSignal
+    {
+        public readonly float TotalTime;
+
+        public TimerStartedSignal(float totalTime)
+        {
+            TotalTime = totalTime;
+            Debug.Log($"[TIMER] Timer started with {totalTime}s");
+        }
+    }
+
+    public struct TimerStoppedSignal
+    {
+    }
+
+    public struct TimerPausedSignal
+    {
+    }
+
+    public struct TimerResumedSignal
+    {
+    }
+
+    public struct LevelChangedSignal
+    {
+        public readonly int PreviousLevelIndex;
+        public readonly int NewLevelIndex;
+        public readonly LevelData NewLevelData;
+
+        public LevelChangedSignal(int previousLevelIndex, int newLevelIndex, LevelData newLevelData)
+        {
+            PreviousLevelIndex = previousLevelIndex;
+            NewLevelIndex = newLevelIndex;
+            NewLevelData = newLevelData;
+            Debug.Log($"[LEVEL] Changed from level {previousLevelIndex} to level {newLevelIndex}: {newLevelData?.name}");
+        }
+    }
+
+    public struct LevelRestartedSignal
+    {
+        public readonly int LevelIndex;
+        public readonly LevelData LevelData;
+
+        public LevelRestartedSignal(int levelIndex, LevelData levelData)
+        {
+            LevelIndex = levelIndex;
+            LevelData = levelData;
+            Debug.Log($"[LEVEL] Restarted level {levelIndex}: {levelData?.name}");
+        }
+    }
+
+    public struct NextLevelAvailableSignal
+    {
+        public readonly int NextLevelIndex;
+
+        public NextLevelAvailableSignal(int nextLevelIndex)
+        {
+            NextLevelIndex = nextLevelIndex;
+            Debug.Log($"[LEVEL] Next level available: {nextLevelIndex}");
+        }
+    }
+
+    public struct AllLevelsCompletedSignal
+    {
+    }
 }

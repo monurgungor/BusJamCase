@@ -60,6 +60,18 @@ namespace BusJam.Installers
             Container.DeclareSignal<EnterPlayingSignal>().OptionalSubscriber();
             Container.DeclareSignal<EnterLevelCompleteSignal>().OptionalSubscriber();
             Container.DeclareSignal<EnterLevelFailedSignal>().OptionalSubscriber();
+
+            Container.DeclareSignal<TimerUpdatedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<TimerExpiredSignal>().OptionalSubscriber();
+            Container.DeclareSignal<TimerStartedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<TimerStoppedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<TimerPausedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<TimerResumedSignal>().OptionalSubscriber();
+
+            Container.DeclareSignal<LevelChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<LevelRestartedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<NextLevelAvailableSignal>().OptionalSubscriber();
+            Container.DeclareSignal<AllLevelsCompletedSignal>().OptionalSubscriber();
         }
 
         private void InstallManagers()
@@ -104,6 +116,20 @@ namespace BusJam.Installers
             {
                 Container.BindInterfacesAndSelfTo<GameStateManager>().FromInstance(gameStateManager).AsSingle();
                 Container.QueueForInject(gameStateManager);
+            }
+
+            var levelTimer = FindObjectOfType<LevelTimer>();
+            if (levelTimer != null)
+            {
+                Container.BindInterfacesAndSelfTo<LevelTimer>().FromInstance(levelTimer).AsSingle();
+                Container.QueueForInject(levelTimer);
+            }
+
+            var levelManager = FindObjectOfType<LevelManager>();
+            if (levelManager != null)
+            {
+                Container.BindInterfacesAndSelfTo<LevelManager>().FromInstance(levelManager).AsSingle();
+                Container.QueueForInject(levelManager);
             }
         }
     }

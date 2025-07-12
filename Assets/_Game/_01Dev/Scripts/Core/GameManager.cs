@@ -10,6 +10,7 @@ namespace BusJam.Core
     {
         private SignalBus _signalBus;
         private GameStateManager _gameStateManager;
+        private LevelManager _levelManager;
 
         private static GameManager Instance { get; set; }
         private LevelData CurrentLevelData { get; set; }
@@ -34,11 +35,6 @@ namespace BusJam.Core
             if (_signalBus != null && GameConfig != null)
             {
                 SubscribeToEvents();
-
-                if (CurrentLevelData != null)
-                {
-                    LoadLevel(CurrentLevelData);
-                }
             }
         }
 
@@ -56,13 +52,13 @@ namespace BusJam.Core
         public void Construct(
             SignalBus signalBus,
             GameConfig gameConfig,
-            LevelData levelData,
-            GameStateManager gameStateManager)
+            GameStateManager gameStateManager,
+            LevelManager levelManager)
         {
             this._signalBus = signalBus;
             GameConfig = gameConfig;
-            CurrentLevelData = levelData;
             _gameStateManager = gameStateManager;
+            _levelManager = levelManager;
         }
 
         private void SubscribeToEvents()
@@ -71,6 +67,8 @@ namespace BusJam.Core
             _signalBus.Subscribe<LevelFailedSignal>(OnLevelFailed);
             _signalBus.Subscribe<AllBusesCompletedSignal>(OnAllBusesCompleted);
             _signalBus.Subscribe<AllPassengersRemovedSignal>(OnAllPassengersRemoved);
+            _signalBus.Subscribe<LevelChangedSignal>(OnLevelChanged);
+            _signalBus.Subscribe<LevelRestartedSignal>(OnLevelRestarted);
         }
 
         public void LoadLevel(LevelData levelData)
@@ -81,10 +79,15 @@ namespace BusJam.Core
 
         public void StartLevel()
         {
-            if (CurrentLevelData != null) 
+            if (_levelManager != null && _levelManager.CurrentLevel != null)
             {
-                Debug.Log($"[GAME MANAGER] Starting level: {CurrentLevelData.name}");
+                CurrentLevelData = _levelManager.CurrentLevel;
+                Debug.Log($"[GAME MANAGER] Starting level: {CurrentLevelData.name} with {CurrentLevelData.GetTotalPassengerCount()} passengers");
                 _signalBus.Fire(new LevelStartedSignal(CurrentLevelData));
+            }
+            else
+            {
+                Debug.LogError("[GAME MANAGER] Cannot start level - no current level set in LevelManager");
             }
         }
 
@@ -100,10 +103,9 @@ namespace BusJam.Core
 
         public void RestartLevel()
         {
-            if (CurrentLevelData != null)
+            if (_levelManager != null)
             {
-                LoadLevel(CurrentLevelData);
-                StartLevel();
+                _levelManager.RestartCurrentLevel();
             }
         }
 
@@ -127,12 +129,28 @@ namespace BusJam.Core
             _signalBus.Fire<LevelCompletedSignal>();
         }
 
+        private void OnLevelChanged(LevelChangedSignal signal)
+        {
+            CurrentLevelData = signal.NewLevelData;
+            LoadLevel(CurrentLevelData);
+            StartLevel();
+        }
+
+        private void OnLevelRestarted(LevelRestartedSignal signal)
+        {
+            CurrentLevelData = signal.LevelData;
+            LoadLevel(CurrentLevelData);
+            StartLevel();
+        }
+
         private void UnsubscribeFromEvents()
         {
             _signalBus?.TryUnsubscribe<LevelCompletedSignal>(OnLevelCompleted);
             _signalBus?.TryUnsubscribe<LevelFailedSignal>(OnLevelFailed);
             _signalBus?.TryUnsubscribe<AllBusesCompletedSignal>(OnAllBusesCompleted);
             _signalBus?.TryUnsubscribe<AllPassengersRemovedSignal>(OnAllPassengersRemoved);
+            _signalBus?.TryUnsubscribe<LevelChangedSignal>(OnLevelChanged);
+            _signalBus?.TryUnsubscribe<LevelRestartedSignal>(OnLevelRestarted);
         }
     }
 }
