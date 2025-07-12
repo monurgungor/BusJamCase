@@ -295,7 +295,6 @@ namespace BusJam.MVC.Controllers
             var targetRow = 0;
             
             
-            // If already at front row, return empty path
             if (startPos.y == targetRow)
             {
                 return new List<Vector2Int>();
@@ -313,7 +312,7 @@ namespace BusJam.MVC.Controllers
                 
                 if (current.Position.y == targetRow)
                 {
-                    var path = current.Path.Skip(1).ToList(); // Skip starting position
+                    var path = current.Path.Skip(1).ToList();
                     return path;
                 }
                 
@@ -334,7 +333,7 @@ namespace BusJam.MVC.Controllers
                 }
             }
             
-            return new List<Vector2Int>(); // No path found
+            return new List<Vector2Int>();
         }
 
         private class PathNode
