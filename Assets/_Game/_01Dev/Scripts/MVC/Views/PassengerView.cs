@@ -30,11 +30,6 @@ namespace BusJam.MVC.Views
             transform.DOKill();
         }
 
-        private void OnMouseDown()
-        {
-            if (model != null && model.CanInteract)
-                signalBus.Fire(new PassengerClickedSignal(gameObject, model.GridPosition));
-        }
 
         [Inject]
         public void Construct(SignalBus signalBus, GameConfig gameConfig)

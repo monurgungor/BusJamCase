@@ -131,6 +131,13 @@ namespace BusJam.Installers
                 Container.BindInterfacesAndSelfTo<LevelManager>().FromInstance(levelManager).AsSingle();
                 Container.QueueForInject(levelManager);
             }
+
+            var inputManager = FindObjectOfType<InputManager>();
+            if (inputManager != null)
+            {
+                Container.BindInterfacesAndSelfTo<InputManager>().FromInstance(inputManager).AsSingle();
+                Container.QueueForInject(inputManager);
+            }
         }
     }
 }
