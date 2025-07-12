@@ -292,7 +292,7 @@ namespace BusJam.MVC.Controllers
 
         public List<Vector2Int> FindPathToFrontRow(Vector2Int startPos)
         {
-            var targetRow = _gridModel.Height - 1;
+            var targetRow = 0;
             
             
             // If already at front row, return empty path

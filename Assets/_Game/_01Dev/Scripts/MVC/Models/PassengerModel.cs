@@ -122,7 +122,7 @@ namespace BusJam.MVC.Models
 
         public bool IsInFrontRow(int gridRows)
         {
-            return GridPosition.y == gridRows - 1;
+            return GridPosition.y == 0;
         }
 
         public MovementDirection GetMovementDirection(Vector2Int target)
