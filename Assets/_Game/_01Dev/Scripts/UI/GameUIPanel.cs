@@ -17,12 +17,12 @@ namespace BusJam.UI
         public void Construct(SignalBus signalBus, GameManager gameManager)
         {
             _signalBus = signalBus;
+            SubscribeToEvents();
         }
 
         protected override void InitializePanel()
         {
             base.InitializePanel();
-            SubscribeToEvents();
         }
 
         private void SubscribeToEvents()
@@ -47,6 +47,10 @@ namespace BusJam.UI
             if (levelNameText != null && signal.LevelData != null)
             {
                 levelNameText.text = signal.LevelData.name;
+            }
+            if (timerText != null && signal.LevelData != null)
+            {
+                UpdateTimerDisplay(signal.LevelData.timeLimit);
             }
         }
 

@@ -1,4 +1,3 @@
-using DG.Tweening;
 using UnityEngine;
 
 namespace BusJam.UI
@@ -6,7 +5,6 @@ namespace BusJam.UI
     public abstract class UIPanel : MonoBehaviour
     {
         [SerializeField] private Canvas canvas;
-        [SerializeField] private float animationDuration = 0.3f;
 
         protected bool IsVisible { get; private set; }
 
@@ -32,42 +30,24 @@ namespace BusJam.UI
             }
         }
 
-        public void Show(bool animate = true)
+        public void Show()
         {
             if (IsVisible) return;
 
             IsVisible = true;
             gameObject.SetActive(true);
-
-            if (animate)
-            {
-                transform.localScale = Vector3.zero;
-                transform.DOScale(Vector3.one, animationDuration).SetEase(Ease.OutBack);
-            }
-            else
-            {
-                transform.localScale = Vector3.one;
-            }
+            transform.localScale = Vector3.one;
 
             OnShow();
         }
 
-        public virtual void Hide(bool animate = true)
+        public void Hide()
         {
             if (!IsVisible) return;
 
             IsVisible = false;
-
-            if (animate)
-            {
-                transform.DOScale(Vector3.zero, animationDuration).SetEase(Ease.InBack)
-                    .OnComplete(() => gameObject.SetActive(false));
-            }
-            else
-            {
-                transform.localScale = Vector3.zero;
-                gameObject.SetActive(false);
-            }
+            transform.localScale = Vector3.zero;
+            gameObject.SetActive(false);
 
             OnHide();
         }
@@ -77,7 +57,6 @@ namespace BusJam.UI
 
         protected virtual void OnDestroy()
         {
-            transform.DOKill();
         }
     }
 }

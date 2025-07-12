@@ -102,23 +102,32 @@ namespace BusJam.MVC.Views
 
         public bool BoardPassenger(GameObject passengerView)
         {
-            if (!model.IsInteractable || model.IsFull)
+            if (passengerView == null)
+            {
+                return false;
+            }
+
+            if (model == null || !model.IsInteractable || model.IsFull)
                 return false;
 
             if (model.AddPassenger(passengerView))
             {
                 passengerView.transform.SetParent(transform);
                 
-                if (model.CurrentPassengerCount <= passengerSeats.Length)
+                if (passengerSeats != null && model.CurrentPassengerCount <= passengerSeats.Length)
                 {
-                    var seat = passengerSeats[model.CurrentPassengerCount - 1];
-                    passengerView.transform.DOMove(seat.position, 0.5f)
-                        .SetEase(Ease.OutCubic)
-                        .OnComplete(() =>
-                        {
-                            var renderer = passengerView.GetComponent<Renderer>();
-                            if (renderer != null) renderer.enabled = false;
-                        });
+                    var seatIndex = model.CurrentPassengerCount - 1;
+                    if (seatIndex >= 0 && seatIndex < passengerSeats.Length && passengerSeats[seatIndex] != null)
+                    {
+                        var seat = passengerSeats[seatIndex];
+                        passengerView.transform.DOMove(seat.position, 0.5f)
+                            .SetEase(Ease.OutCubic)
+                            .OnComplete(() =>
+                            {
+                                var renderer = passengerView.GetComponent<Renderer>();
+                                if (renderer != null) renderer.enabled = false;
+                            });
+                    }
                 }
                 else
                 {

@@ -10,6 +10,10 @@ namespace BusJam.MVC.Models
 
         public GridModel(int width, int height, float cellSize, Vector3 gridOffset, LevelData levelData = null)
         {
+            UnityEngine.Debug.Assert(width > 0, "[GRID MODEL] Width must be greater than 0");
+            UnityEngine.Debug.Assert(height > 0, "[GRID MODEL] Height must be greater than 0");
+            UnityEngine.Debug.Assert(cellSize > 0f, "[GRID MODEL] Cell size must be greater than 0");
+            
             Width = width;
             Height = height;
             CellSize = cellSize;

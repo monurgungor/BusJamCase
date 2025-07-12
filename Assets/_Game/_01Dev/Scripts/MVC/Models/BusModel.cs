@@ -16,6 +16,9 @@ namespace BusJam.MVC.Models
     {
         public BusModel(PassengerColor busColor, int capacity, Vector3 arrivalPosition, Vector3 departurePosition)
         {
+            UnityEngine.Debug.Assert(capacity > 0, "[BUS MODEL] Capacity must be greater than 0");
+            UnityEngine.Debug.Assert(System.Enum.IsDefined(typeof(PassengerColor), busColor), "[BUS MODEL] Invalid passenger color");
+            
             BusColor = busColor;
             Capacity = capacity;
             ArrivalPosition = arrivalPosition;
@@ -46,9 +49,13 @@ namespace BusJam.MVC.Models
 
         public bool AddPassenger(GameObject passengerView)
         {
+            UnityEngine.Debug.Assert(passengerView != null, "[BUS MODEL] Cannot add null passenger");
+            
             if (IsFull) return false;
 
             PassengerViews.Add(passengerView);
+            
+            UnityEngine.Debug.Assert(PassengerViews.Count <= Capacity, "[BUS MODEL] Passenger count exceeds capacity");
             return true;
         }
 

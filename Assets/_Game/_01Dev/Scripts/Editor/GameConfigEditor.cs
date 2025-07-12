@@ -96,15 +96,8 @@ namespace BusJam.Editor
             EditorGUILayout.BeginVertical("box");
 
             var moveSpeedProp = serializedObject.FindProperty("passengerMoveSpeed");
-            var idleIntervalProp = serializedObject.FindProperty("passengerIdleAnimationInterval");
-            var idleStrengthProp = serializedObject.FindProperty("passengerIdleAnimationStrength");
 
             moveSpeedProp.floatValue = EditorGUILayout.Slider("Move Speed", moveSpeedProp.floatValue, 1f, 10f);
-            idleIntervalProp.floatValue =
-                EditorGUILayout.Slider("Idle Animation Interval", idleIntervalProp.floatValue, 0.5f, 5f);
-            idleStrengthProp.floatValue =
-                EditorGUILayout.Slider("Idle Animation Strength", idleStrengthProp.floatValue, 0.05f, 0.5f);
-
             EditorGUILayout.EndVertical();
         }
 

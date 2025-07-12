@@ -25,9 +25,6 @@ namespace BusJam.MVC.Controllers
         private GameConfig _gameConfig;
         private GridController _gridController;
         private SignalBus _signalBus;
-
-        public int TotalPassengerCount => _allPassengers.Count;
-        public bool HasPassengersOnGrid => _allPassengers.Any(p => p.GetModel().IsOnGrid);
         
         public void Initialize()
         {
@@ -87,9 +84,20 @@ namespace BusJam.MVC.Controllers
 
         private void HandlePassengerClick(PassengerView passenger)
         {
-            CalculatePassengerOutlines(passenger);
+            UnityEngine.Debug.Assert(passenger != null, "[PASSENGER CONTROLLER] Passenger view is null");
             
             var model = passenger.GetModel();
+            UnityEngine.Debug.Assert(model != null, "[PASSENGER CONTROLLER] Passenger model is null");
+            
+            var currentPos = model.GridPosition;
+            UnityEngine.Debug.Assert(_passengerGrid.ContainsKey(currentPos), "[PASSENGER CONTROLLER] Passenger not found in grid at expected position");
+            
+            _passengerGrid.Remove(currentPos);
+            _gridController.SetCellState(currentPos, true);
+            model.SetState(PassengerState.Moving);
+            
+            CalculatePassengerOutlines(passenger);
+            
             var isInFrontRow = model.IsInFrontRow(_gridController.GetGridHeight());
             
             if (isInFrontRow)
@@ -109,6 +117,7 @@ namespace BusJam.MVC.Controllers
 
             if (!validation.CanMove)
             {
+                RestorePassengerPosition(passenger);
                 HandleBlockedPassenger(passenger, validation.BlockingReason);
                 return;
             }
@@ -122,7 +131,7 @@ namespace BusJam.MVC.Controllers
                     ExecuteBenchMovement(passenger);
                     break;
                 default:
-                    Debug.LogWarning($"[PASSENGER CONTROLLER] Unknown destination: {validation.Destination}");
+                    RestorePassengerPosition(passenger);
                     break;
             }
         }
@@ -151,7 +160,7 @@ namespace BusJam.MVC.Controllers
                 }
                 else
                 {
-                    Debug.LogWarning($"[PASSENGER CONTROLLER] No path found for passenger at {currentPos}");
+                    RestorePassengerPosition(passenger);
                     passenger.PlayErrorAnimation();
                 }
             }
@@ -160,18 +169,33 @@ namespace BusJam.MVC.Controllers
         private void ExecuteFullPathMovement(PassengerView passenger, List<Vector2Int> gridPath)
         {
             var model = passenger.GetModel();
-            var startPos = model.GridPosition;
             var finalPos = gridPath[gridPath.Count - 1];
             
             var worldPath = gridPath.Select(gridPos => _gridController.GridToWorldPosition(gridPos)).ToList();
             
-            UpdatePassengerGridPosition(passenger, startPos, finalPos);
+            _passengerGrid[finalPos] = passenger;
+            _gridController.SetCellState(finalPos, false);
+            model.SetGridPosition(finalPos);
             
             passenger.MoveAlongPath(worldPath, () =>
             {
+                model.SetState(PassengerState.OnGrid);
                 ContinueToDestination(passenger);
                 CalculatePassengerOutlines();
             });
+        }
+
+        private void RestorePassengerPosition(PassengerView passenger)
+        {
+            var model = passenger.GetModel();
+            var currentPos = model.GridPosition;
+            
+            _passengerGrid[currentPos] = passenger;
+            _gridController.SetCellState(currentPos, false);
+            model.SetState(PassengerState.OnGrid);
+            
+            CalculatePassengerOutlines();
+            
         }
 
         private void UpdatePassengerGridPosition(PassengerView passenger, Vector2Int fromPos, Vector2Int toPos)
@@ -186,7 +210,6 @@ namespace BusJam.MVC.Controllers
             
             model.SetGridPosition(toPos);
             
-            Debug.Log($"[PASSENGER CONTROLLER] Moved passenger from {fromPos} to {toPos}");
         }
         
         private void ContinueToDestination(PassengerView passenger)
@@ -200,7 +223,6 @@ namespace BusJam.MVC.Controllers
             else
             {
                 model.SetCanExit(true);
-                Debug.Log($"[PASSENGER CONTROLLER] Passenger at {model.GridPosition} can now exit");
             }
         }
 
@@ -238,12 +260,14 @@ namespace BusJam.MVC.Controllers
         private void ExecuteGridMovement(PassengerView passenger, Vector2Int targetPosition, Vector3 worldPosition)
         {
             var model = passenger.GetModel();
-            var currentPosition = model.GridPosition;
             
-            UpdatePassengerGridPosition(passenger, currentPosition, targetPosition);
+            _passengerGrid[targetPosition] = passenger;
+            _gridController.SetCellState(targetPosition, false);
+            model.SetGridPosition(targetPosition);
             
             passenger.MoveToGrid(targetPosition, worldPosition, () =>
             {
+                model.SetState(PassengerState.OnGrid);
                 CheckExitConditions(passenger);
                 CalculatePassengerOutlines();
             });
@@ -263,12 +287,10 @@ namespace BusJam.MVC.Controllers
         private void OnPassengerRemoved(PassengerRemovedSignal signal)
         {
             var passengerView = signal.PassengerView.GetComponent<PassengerView>();
-            if (passengerView != null)
-            {
-                RemovePassengerFromTracking(passengerView);
-                _passengerFactory.Release(passengerView);
-                CheckAllPassengersRemoved();
-            }
+            if (passengerView == null) return;
+            RemovePassengerFromTracking(passengerView);
+            _passengerFactory.Release(passengerView);
+            CheckAllPassengersRemoved();
         }
 
         private void ExecuteBusMovement(PassengerView passenger)
@@ -286,16 +308,10 @@ namespace BusJam.MVC.Controllers
             
             passenger.MoveOffGrid(busPosition, () =>
             {
-                if (bus.BoardPassenger(passenger.gameObject))
-                {
-                    passenger.GetModel().SetState(PassengerState.OnBus);
-                    passenger.PlayPickupAnimation();
-                    passenger.DisableOutline();
-                }
-                else
-                {
-                    Debug.LogError("Bus boarding failed after movement");
-                }
+                if (!bus.BoardPassenger(passenger.gameObject)) return;
+                passenger.GetModel().SetState(PassengerState.OnBus);
+                passenger.PlayPickupAnimation();
+                passenger.DisableOutline();
             });
         }
 
@@ -312,16 +328,10 @@ namespace BusJam.MVC.Controllers
             
             passenger.MoveOffGrid(benchPosition, () =>
             {
-                if (_benchController.AddPassengerToQueue(passenger.gameObject))
-                {
-                    passenger.GetModel().SetState(PassengerState.InQueue);
-                    passenger.PlayPickupAnimation();
-                    passenger.DisableOutline();
-                }
-                else
-                {
-                    Debug.LogError("Bench queueing failed after movement");
-                }
+                if (!_benchController.AddPassengerToQueue(passenger.gameObject)) return;
+                passenger.GetModel().SetState(PassengerState.InQueue);
+                passenger.PlayPickupAnimation();
+                passenger.DisableOutline();
             });
         }
 
@@ -330,12 +340,10 @@ namespace BusJam.MVC.Controllers
             switch (reason)
             {
                 case MovementBlockingReason.SurroundedByPassengers:
-                    Debug.LogWarning($"Passenger at {passenger.GetModel().GridPosition} is surrounded!");
                     ShowBlockedAnimation(passenger);
                     break;
                     
                 case MovementBlockingReason.BenchQueueFull:
-                    Debug.LogError("GAME OVER: Bench queue is full!");
                     _signalBus.Fire<LevelFailedSignal>();
                     break;
             }
@@ -366,6 +374,12 @@ namespace BusJam.MVC.Controllers
             }
 
             _allPassengers.Remove(passenger);
+            
+            if (passenger != null)
+            {
+                passenger.transform.DOKill();
+            }
+            
             CheckAllPassengersRemoved();
         }
 
@@ -404,12 +418,17 @@ namespace BusJam.MVC.Controllers
 
         private void CreatePassenger(PassengerColor color, Vector2Int gridPosition)
         {
+            Debug.Assert(_passengerFactory != null, "[PASSENGER CONTROLLER] PassengerFactory is null");
+            Debug.Assert(_gridController != null, "[PASSENGER CONTROLLER] GridController is null");
+            
             if (_passengerGrid.ContainsKey(gridPosition)) return;
             if (!_gridController.IsValidPosition(gridPosition)) return;
             if (_gridController.IsVoidCell(gridPosition)) return;
 
             var worldPosition = _gridController.GridToWorldPosition(gridPosition);
             var passengerView = _passengerFactory.Create(color, gridPosition, worldPosition, passengerParent);
+
+            Debug.Assert(passengerView != null, "[PASSENGER CONTROLLER] Failed to create passenger view");
 
             _allPassengers.Add(passengerView);
             _passengerGrid[gridPosition] = passengerView;
@@ -447,27 +466,44 @@ namespace BusJam.MVC.Controllers
 
         private void CalculatePassengerOutlines(PassengerView exclude = null)
         {
-            foreach (var p in _allPassengers)
+            foreach (var passenger in _allPassengers)
             {
-                if (p == exclude)
+                if (passenger == exclude)
                 {
-                    p.DisableOutline();
+                    passenger.DisableOutline();
                     continue;
                 }
-                var m = p.GetModel();
-                if (m.IsOnGrid)
+                
+                var model = passenger.GetModel();
+                
+                if (!model.IsOnGrid)
                 {
-                    var path = _gridController.FindPathToFrontRow(m.GridPosition);
-                    if (path.Count > 0)
-                        p.EnableOutline();
-                    else
-                        p.DisableOutline();
+                    passenger.DisableOutline();
+                    continue;
                 }
+                
+                var canMove = CanPassengerMoveTowardsExit(passenger);
+                
+                if (canMove)
+                    passenger.EnableOutline();
                 else
-                {
-                    p.DisableOutline();
-                }
+                    passenger.DisableOutline();
             }
+        }
+
+        private bool CanPassengerMoveTowardsExit(PassengerView passenger)
+        {
+            var model = passenger.GetModel();
+            var currentPos = model.GridPosition;
+            
+            if (model.IsInFrontRow(_gridController.GetGridHeight()))
+            {
+                var validation = _gridController.ValidatePassengerMovement(currentPos, model.Color);
+                return validation.CanMove;
+            }
+            
+            var path = _gridController.FindPathToFrontRow(currentPos);
+            return path.Count > 0;
         }
     }
 }

@@ -100,7 +100,7 @@ public class LevelDataEditor : Editor
 
         _busList = new ReorderableList(_so, _busQueueProp, true, true, true, true)
         {
-            drawHeaderCallback = r => EditorGUI.LabelField(r, "Bus Queue (front first)"),
+            drawHeaderCallback = r => EditorGUI.LabelField(r, "Bus Queue (top first)"),
             drawElementCallback = (r, i, _, _) =>
             {
                 var elem = _busQueueProp.GetArrayElementAtIndex(i);
@@ -111,7 +111,7 @@ public class LevelDataEditor : Editor
                 var capacityRect = new Rect(r.x + r.width * 0.55f, r.y, r.width * 0.4f, r.height);
                 
                 colorProp.enumValueIndex = (int)(PassengerColor)EditorGUI.EnumPopup(colorRect, (PassengerColor)colorProp.enumValueIndex);
-                EditorGUI.LabelField(new Rect(capacityRect.x - 50, capacityRect.y, 45, capacityRect.height), "Cap:");
+                EditorGUI.LabelField(new Rect(capacityRect.x - 50, capacityRect.y, 45, capacityRect.height), "");
                 capacityProp.intValue = EditorGUI.IntField(capacityRect, capacityProp.intValue);
             }
         };

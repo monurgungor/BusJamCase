@@ -152,6 +152,13 @@ namespace BusJam.Installers
                 Container.BindInterfacesAndSelfTo<InputManager>().FromInstance(inputManager).AsSingle();
                 Container.QueueForInject(inputManager);
             }
+
+            var saveManager = FindObjectOfType<SaveManager>();
+            if (saveManager != null)
+            {
+                Container.BindInterfacesAndSelfTo<SaveManager>().FromInstance(saveManager).AsSingle();
+                Container.QueueForInject(saveManager);
+            }
         }
 
         private void InstallUI()

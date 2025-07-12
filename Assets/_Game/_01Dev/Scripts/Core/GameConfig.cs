@@ -44,14 +44,9 @@ namespace BusJam.Core
         public float StationSlotSpacing => stationSlotSpacing;
         public float BusArrivalSpeed => busArrivalSpeed;
         public float BusDepartureSpeed => busDepartureSpeed;
-        public float BusAutoLoadDelay => busAutoLoadDelay;
-        public int DefaultBusCapacity => defaultBusCapacity;
         public float PassengerMoveSpeed => passengerMoveSpeed;
-        public Color[] GameColors => gameColors;
-        public float SuccessAnimationDuration => successAnimationDuration;
         public float ErrorAnimationDuration => errorAnimationDuration;
         public float PickupAnimationDuration => pickupAnimationDuration;
-        public float DropAnimationDuration => dropAnimationDuration;
 
         public Color GetPassengerColor(PassengerColor color)
         {

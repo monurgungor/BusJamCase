@@ -9,7 +9,6 @@ namespace BusJam.Core
     {
         private SignalBus _signalBus;
         private Camera _mainCamera;
-        private GameStateManager _gameStateManager;
 
         public void Initialize()
         {
@@ -24,64 +23,17 @@ namespace BusJam.Core
         public void Construct(SignalBus signalBus, GameStateManager gameStateManager)
         {
             _signalBus = signalBus;
-            _gameStateManager = gameStateManager;
         }
 
         private void Update()
         {
             HandleInput();
-            HandleDebugInput();
-        }
-        
-        private void HandleDebugInput()
-        {
-            if (_gameStateManager == null) return;
-
-            if (Input.GetKeyDown(KeyCode.P))
-            {
-                if (_gameStateManager.CurrentState == GameState.MainMenu)
-                {
-                    _signalBus.Fire(new LoadLevelRequestedSignal(0));
-                }
-                else if (_gameStateManager.CurrentState == GameState.LevelComplete || _gameStateManager.CurrentState == GameState.LevelFailed)
-                {
-                    _signalBus.Fire<RestartLevelRequestedSignal>();
-                }
-            }
-
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                if (_gameStateManager.CurrentState == GameState.Playing)
-                {
-                    _signalBus.Fire<PauseGameRequestedSignal>();
-                }
-            }
-
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                if (_gameStateManager.CurrentState == GameState.Playing)
-                {
-                    _signalBus.Fire<ResumeGameRequestedSignal>();
-                }
-            }
-
-            if (_gameStateManager.CurrentState == GameState.MainMenu)
-            {
-                for (var i = 0; i < 10; i++)
-                {
-                    if (!Input.GetKeyDown(KeyCode.Alpha0 + i)) continue;
-                    
-                    var levelIndex = i == 0 ? 9 : i - 1;
-                    _signalBus.Fire(new LoadLevelRequestedSignal(levelIndex));
-                    break;
-                }
-            }
         }
 
         private void HandleInput()
         {
-            Vector3 inputPosition = Vector3.zero;
-            bool hasInput = false;
+            var inputPosition = Vector3.zero;
+            var hasInput = false;
 
             if (Input.GetMouseButtonDown(0))
             {
@@ -102,10 +54,9 @@ namespace BusJam.Core
 
         private void ProcessClick(Vector3 screenPosition)
         {
-            Ray ray = _mainCamera.ScreenPointToRay(screenPosition);
-            RaycastHit hit;
+            var ray = _mainCamera.ScreenPointToRay(screenPosition);
 
-            if (Physics.Raycast(ray, out hit))
+            if (Physics.Raycast(ray, out var hit))
             {
                 var clickedObject = hit.collider.gameObject;
                 
@@ -113,7 +64,7 @@ namespace BusJam.Core
                 if (passengerView != null)
                 {
                     var model = passengerView.GetModel();
-                    if (model != null && model.CanInteract)
+                    if (model is { CanInteract: true })
                     {
                         _signalBus.Fire(new PassengerClickedSignal(clickedObject, model.GridPosition));
                     }
@@ -124,7 +75,6 @@ namespace BusJam.Core
                 if (gridCellView != null)
                 {
                     _signalBus.Fire(new GridCellClickedSignal(gridCellView.GridPosition, gridCellView.WorldPosition));
-                    return;
                 }
             }
         }

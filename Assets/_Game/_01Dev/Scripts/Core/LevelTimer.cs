@@ -5,7 +5,7 @@ using Zenject;
 
 namespace BusJam.Core
 {
-    public class LevelTimer : MonoBehaviour, ITickable, IInitializable
+    public class LevelTimer : MonoBehaviour, IInitializable
     {
         private SignalBus _signalBus;
         private GameStateManager _gameStateManager;
@@ -23,7 +23,6 @@ namespace BusJam.Core
 
         public void Initialize()
         {
-            SubscribeToEvents();
         }
 
         [Inject]
@@ -31,19 +30,23 @@ namespace BusJam.Core
         {
             _signalBus = signalBus;
             _gameStateManager = gameStateManager;
+            SubscribeToEvents();
         }
 
         private void SubscribeToEvents()
         {
-            _signalBus.Subscribe<LevelStartedSignal>(OnLevelStarted);
-            _signalBus.Subscribe<LevelCompletedSignal>(OnLevelCompleted);
-            _signalBus.Subscribe<LevelFailedSignal>(OnLevelFailed);
-            _signalBus.Subscribe<GamePausedSignal>(OnGamePaused);
-            _signalBus.Subscribe<GameResumedSignal>(OnGameResumed);
-            _signalBus.Subscribe<LevelChangedSignal>(OnLevelChanged);
+            if (_signalBus != null)
+            {
+                _signalBus.Subscribe<LevelStartedSignal>(OnLevelStarted);
+                _signalBus.Subscribe<LevelCompletedSignal>(OnLevelCompleted);
+                _signalBus.Subscribe<LevelFailedSignal>(OnLevelFailed);
+                _signalBus.Subscribe<GamePausedSignal>(OnGamePaused);
+                _signalBus.Subscribe<GameResumedSignal>(OnGameResumed);
+                _signalBus.Subscribe<LevelChangedSignal>(OnLevelChanged);
+            }
         }
 
-        public void Tick()
+        private void Update()
         {
             if (!_isRunning || _isPaused) return;
 
@@ -55,16 +58,23 @@ namespace BusJam.Core
                 TimerExpired();
             }
 
-            _signalBus.Fire(new TimerUpdatedSignal(_remainingTime, _totalTime, ElapsedTime));
+            if (_signalBus != null)
+            {
+                _signalBus.Fire(new TimerUpdatedSignal(_remainingTime, _totalTime, ElapsedTime));
+            }
         }
 
         public void StartTimer(float timeLimit)
         {
+            UnityEngine.Debug.Assert(timeLimit > 0f, "[LEVEL TIMER] Time limit must be greater than 0");
+            UnityEngine.Debug.Assert(_signalBus != null, "[LEVEL TIMER] SignalBus is null");
+            
             _totalTime = timeLimit;
             _remainingTime = timeLimit;
             _isRunning = true;
             _isPaused = false;
 
+            Debug.Log($"[LEVEL TIMER] Timer started - Total: {_totalTime}s, Running: {_isRunning}");
             _signalBus.Fire(new TimerStartedSignal(_totalTime));
         }
 
@@ -93,11 +103,18 @@ namespace BusJam.Core
             _signalBus.Fire<TimerResumedSignal>();
         }
 
+        public void SetRemainingTime(float time)
+        {
+            UnityEngine.Debug.Assert(time >= 0f, "[LEVEL TIMER] Remaining time cannot be negative");
+            
+            _remainingTime = Mathf.Max(0f, time);
+            _signalBus.Fire(new TimerUpdatedSignal(_remainingTime, _totalTime, ElapsedTime));
+        }
+
         private void TimerExpired()
         {
             _isRunning = false;
             _signalBus.Fire<TimerExpiredSignal>();
-            Debug.LogWarning("[TIMER] Time's up! Timer expired");
         }
 
         private void OnLevelStarted(LevelStartedSignal signal)

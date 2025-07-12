@@ -32,7 +32,6 @@ namespace BusJam.Core
         private void OnLevelStarted(LevelStartedSignal signal)
         {
             ResetWinConditions();
-            Debug.Log("[WIN CONDITION] Level started, monitoring win conditions");
         }
 
         private void ResetWinConditions()
@@ -45,16 +44,19 @@ namespace BusJam.Core
         {
             if (_levelCompleted || _levelFailed) return;
 
-            Debug.Log("[WIN CONDITION] All buses completed - Level won!");
-            _levelCompleted = true;
-            _signalBus.Fire<LevelCompletedSignal>();
+            CheckWinCondition();
         }
 
         private void OnAllPassengersRemoved()
         {
             if (_levelCompleted || _levelFailed) return;
 
-            Debug.Log("[WIN CONDITION] All passengers removed - Level won!");
+            _levelCompleted = true;
+            _signalBus.Fire<LevelCompletedSignal>();
+        }
+
+        private void CheckWinCondition()
+        {
             _levelCompleted = true;
             _signalBus.Fire<LevelCompletedSignal>();
         }
@@ -63,7 +65,6 @@ namespace BusJam.Core
         {
             if (_levelCompleted || _levelFailed) return;
 
-            Debug.Log("[WIN CONDITION] Timer expired - Level failed!");
             _levelFailed = true;
             _signalBus.Fire<LevelFailedSignal>();
         }

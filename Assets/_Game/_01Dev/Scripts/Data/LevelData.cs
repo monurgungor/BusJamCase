@@ -46,7 +46,6 @@ namespace BusJam.Data
     {
         public PassengerColor busColor;
         public int capacity = 4;
-        public float arrivalTime;
     }
 
     [CreateAssetMenu(fileName = "New Level", menuName = "BusJam/Level Data")]
@@ -126,8 +125,11 @@ namespace BusJam.Data
             var busData = new List<BusQueueEntry>();
             for (var i = 0; i < busQueue.Length; i++)
             {
-                var entry = busQueue[i];
-                entry.arrivalTime = i * 5f;
+                var entry = new BusQueueEntry
+                {
+                    busColor = busQueue[i].busColor,
+                    capacity = busQueue[i].capacity
+                };
                 busData.Add(entry);
             }
             return busData;
