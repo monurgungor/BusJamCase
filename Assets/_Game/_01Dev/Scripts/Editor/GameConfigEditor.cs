@@ -76,17 +76,7 @@ namespace BusJam.Editor
             EditorGUILayout.BeginVertical("box");
 
             var arrivalSpeedProp = serializedObject.FindProperty("busArrivalSpeed");
-            var departureSpeedProp = serializedObject.FindProperty("busDepartureSpeed");
-            var autoLoadDelayProp = serializedObject.FindProperty("busAutoLoadDelay");
-            var defaultCapacityProp = serializedObject.FindProperty("defaultBusCapacity");
-
             arrivalSpeedProp.floatValue = EditorGUILayout.Slider("Arrival Speed", arrivalSpeedProp.floatValue, 1f, 15f);
-            departureSpeedProp.floatValue =
-                EditorGUILayout.Slider("Departure Speed", departureSpeedProp.floatValue, 1f, 15f);
-            autoLoadDelayProp.floatValue =
-                EditorGUILayout.Slider("Auto Load Delay", autoLoadDelayProp.floatValue, 0.1f, 5f);
-            defaultCapacityProp.intValue =
-                EditorGUILayout.IntSlider("Default Capacity", defaultCapacityProp.intValue, 1, 10);
 
             EditorGUILayout.EndVertical();
         }
@@ -135,20 +125,10 @@ namespace BusJam.Editor
         {
             EditorGUILayout.BeginVertical("box");
 
-            var successDurationProp = serializedObject.FindProperty("successAnimationDuration");
             var errorDurationProp = serializedObject.FindProperty("errorAnimationDuration");
-            var pickupDurationProp = serializedObject.FindProperty("pickupAnimationDuration");
-            var dropDurationProp = serializedObject.FindProperty("dropAnimationDuration");
-
-            successDurationProp.floatValue =
-                EditorGUILayout.Slider("Success Animation", successDurationProp.floatValue, 0.1f, 1f);
             errorDurationProp.floatValue =
                 EditorGUILayout.Slider("Error Animation", errorDurationProp.floatValue, 0.1f, 1f);
-            pickupDurationProp.floatValue =
-                EditorGUILayout.Slider("Pickup Animation", pickupDurationProp.floatValue, 0.1f, 1f);
-            dropDurationProp.floatValue =
-                EditorGUILayout.Slider("Drop Animation", dropDurationProp.floatValue, 0.1f, 1f);
-
+            
             EditorGUILayout.EndVertical();
         }
     }
