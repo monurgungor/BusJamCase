@@ -1061,6 +1061,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canvas: {fileID: 803324312}
   levelButtonContainer: {fileID: 1974900427}
+  containerRect: {fileID: 1974900427}
   levelButtonPrefab: {fileID: 114970821101423450, guid: 38ec025e17687ee41b70a87d32cdc636,
     type: 3}
 --- !u!1 &813686230
