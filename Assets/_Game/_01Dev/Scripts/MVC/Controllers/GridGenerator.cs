@@ -58,9 +58,15 @@ namespace BusJam.MVC.Controllers
         private void CreateGridCell(int x, int y)
         {
             var gridPosition = new Vector2Int(x, y);
-            var worldPosition = GridToWorldPosition(gridPosition);
             var isVoid = IsVoidCell(gridPosition);
 
+            if (isVoid)
+            {
+                GridCells[x, y] = null;
+                return;
+            }
+
+            var worldPosition = GridToWorldPosition(gridPosition);
             var cell = _gridCellPool.Get();
             if (cell == null)
             {
@@ -68,7 +74,7 @@ namespace BusJam.MVC.Controllers
                 return;
             }
 
-            cell.Initialize(gridPosition, worldPosition, isVoid);
+            cell.Initialize(gridPosition, worldPosition);
             cell.transform.SetParent(gridParent);
             cell.transform.position = worldPosition;
 
@@ -100,8 +106,9 @@ namespace BusJam.MVC.Controllers
 
         public bool IsCellEmpty(Vector2Int gridPosition)
         {
+            if (IsVoidCell(gridPosition)) return false;
             var cell = GetCellAt(gridPosition);
-            return cell != null && cell.IsEmpty && !IsVoidCell(gridPosition);
+            return cell != null && cell.IsEmpty;
         }
 
         public bool IsVoidCell(Vector2Int gridPosition)
@@ -109,11 +116,6 @@ namespace BusJam.MVC.Controllers
             return _gridModel?.IsVoidCell(gridPosition) ?? false;
         }
 
-        public void SetCellState(Vector2Int gridPosition, bool isEmpty)
-        {
-            var cell = GetCellAt(gridPosition);
-            if (cell != null) cell.SetEmpty(isEmpty);
-        }
 
         public int GetGridHeight()
         {

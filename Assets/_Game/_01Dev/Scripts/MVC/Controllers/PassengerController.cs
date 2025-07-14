@@ -124,7 +124,6 @@ namespace BusJam.MVC.Controllers
             if (_passengerGrid.ContainsKey(gridPosition))
             {
                 _passengerGrid.Remove(gridPosition);
-                _gridController.SetCellState(gridPosition, true);
             }
         }
 

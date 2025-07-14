@@ -52,7 +52,6 @@ namespace BusJam.Pooling
             
             activeObjects.Add(obj);
             obj.gameObject.SetActive(true);
-            obj.SetEmpty(true);
             return obj;
         }
         
@@ -65,7 +64,6 @@ namespace BusJam.Pooling
             obj.transform.localPosition = Vector3.zero;
             obj.transform.localRotation = Quaternion.identity;
             obj.transform.localScale = Vector3.one;
-            obj.SetEmpty(true);
             
             activeObjects.Remove(obj);
             availableObjects.Enqueue(obj);

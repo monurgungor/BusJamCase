@@ -37,7 +37,6 @@ namespace BusJam.MVC.Controllers
             var currentPos = model.GridPosition;
             
             passengerGrid.Remove(currentPos);
-            _gridController.SetCellState(currentPos, true);
             model.SetState(PassengerState.Moving);
             
             var gridHeight = _gridController.GetGridHeight();
@@ -161,7 +160,6 @@ namespace BusJam.MVC.Controllers
             
             passengerGrid[currentPos] = passenger;
             passenger.transform.position = _gridController.GridToWorldPosition(currentPos);
-            _gridController.SetCellState(currentPos, false);
             model.SetState(PassengerState.OnGrid);
         }
 

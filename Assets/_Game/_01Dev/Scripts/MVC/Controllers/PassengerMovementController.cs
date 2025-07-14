@@ -58,7 +58,6 @@ namespace BusJam.MVC.Controllers
             var worldPath = gridPath.Select(gridPos => _gridController.GridToWorldPosition(gridPos)).ToList();
             
             passengerGrid[finalPos] = passenger;
-            _gridController.SetCellState(finalPos, false);
             model.SetGridPosition(finalPos);
             
             passenger.MoveAlongPath(worldPath, () =>
@@ -73,7 +72,6 @@ namespace BusJam.MVC.Controllers
             var model = passenger.GetModel();
             
             passengerGrid[targetPosition] = passenger;
-            _gridController.SetCellState(targetPosition, false);
             model.SetGridPosition(targetPosition);
             
             passenger.MoveToGrid(targetPosition, worldPosition, () =>
@@ -89,7 +87,6 @@ namespace BusJam.MVC.Controllers
             var currentPos = model.GridPosition;
             
             passengerGrid[currentPos] = passenger;
-            _gridController.SetCellState(currentPos, false);
             model.SetState(PassengerState.OnGrid);
         }
 
@@ -99,10 +96,6 @@ namespace BusJam.MVC.Controllers
             
             passengerGrid.Remove(fromPos);
             passengerGrid[toPos] = passenger;
-            
-            _gridController.SetCellState(fromPos, true);
-            _gridController.SetCellState(toPos, false);
-            
             model.SetGridPosition(toPos);
         }
 

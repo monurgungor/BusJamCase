@@ -166,10 +166,6 @@ namespace BusJam.MVC.Controllers
             return _pathfindingService.GetDirectNeighbors(gridPosition);
         }
 
-        public void SetCellState(Vector2Int gridPosition, bool isEmpty)
-        {
-            _gridGenerator.SetCellState(gridPosition, isEmpty);
-        }
 
         public int GetGridHeight()
         {

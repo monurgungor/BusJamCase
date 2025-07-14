@@ -42,7 +42,6 @@ namespace BusJam.MVC.Controllers
 
             if (passengerView != null)
             {
-                _gridController.SetCellState(gridPosition, false);
                 _signalBus.Fire(new PassengerCreatedSignal(passengerView.gameObject, color, gridPosition));
             }
 
