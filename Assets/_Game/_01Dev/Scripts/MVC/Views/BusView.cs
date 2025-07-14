@@ -49,8 +49,7 @@ namespace BusJam.MVC.Views
 
             SetupColor();
 
-            var startPosition = model.ArrivalPosition + Vector3.back * 10f;
-            transform.position = startPosition;
+            transform.position = model.SpawnPosition;
 
             ApproachStation(gameConfig.BusArrivalSpeed);
         }

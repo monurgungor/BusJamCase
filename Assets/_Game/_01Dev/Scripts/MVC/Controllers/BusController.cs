@@ -14,6 +14,7 @@ namespace BusJam.MVC.Controllers
     public class BusController : MonoBehaviour, IInitializable
     {
         [SerializeField] private Transform busParent;
+        [SerializeField] private Transform busSpawnPoint;
         [SerializeField] private Transform busArrivalPoint;
         [SerializeField] private Transform busDeparturePoint;
         
@@ -237,15 +238,16 @@ namespace BusJam.MVC.Controllers
                 busView.transform.SetParent(busParent);
             }
 
-            if (busArrivalPoint == null || busDeparturePoint == null)
+            if (busSpawnPoint == null || busArrivalPoint == null || busDeparturePoint == null)
             {
-                Debug.LogError("[BUS CONTROLLER] Bus arrival or departure point not set");
+                Debug.LogError("[BUS CONTROLLER] Bus spawn, arrival, or departure point not set");
                 return;
             }
 
             var busModel = new BusModel(
                 busData.busColor,
                 busData.capacity,
+                busSpawnPoint.position,
                 busArrivalPoint.position,
                 busDeparturePoint.position
             );

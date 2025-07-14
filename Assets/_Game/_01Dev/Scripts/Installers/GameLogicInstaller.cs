@@ -97,11 +97,46 @@ namespace BusJam.Installers
                 Container.QueueForInject(winConditionManager);
             }
 
+            var gridGenerator = FindObjectOfType<GridGenerator>();
+            if (gridGenerator != null)
+            {
+                Container.BindInterfacesAndSelfTo<GridGenerator>().FromInstance(gridGenerator).AsSingle();
+                Container.QueueForInject(gridGenerator);
+            }
+
+            var pathfindingService = FindObjectOfType<PathfindingService>();
+            if (pathfindingService != null)
+            {
+                Container.BindInterfacesAndSelfTo<PathfindingService>().FromInstance(pathfindingService).AsSingle();
+                Container.QueueForInject(pathfindingService);
+            }
+
             var gridController = FindObjectOfType<GridController>();
             if (gridController != null)
             {
                 Container.BindInterfacesAndSelfTo<GridController>().FromInstance(gridController).AsSingle();
                 Container.QueueForInject(gridController);
+            }
+
+            var passengerSpawner = FindObjectOfType<PassengerSpawner>();
+            if (passengerSpawner != null)
+            {
+                Container.BindInterfacesAndSelfTo<PassengerSpawner>().FromInstance(passengerSpawner).AsSingle();
+                Container.QueueForInject(passengerSpawner);
+            }
+
+            var passengerMovementController = FindObjectOfType<PassengerMovementController>();
+            if (passengerMovementController != null)
+            {
+                Container.BindInterfacesAndSelfTo<PassengerMovementController>().FromInstance(passengerMovementController).AsSingle();
+                Container.QueueForInject(passengerMovementController);
+            }
+
+            var passengerInteractionHandler = FindObjectOfType<PassengerInteractionHandler>();
+            if (passengerInteractionHandler != null)
+            {
+                Container.BindInterfacesAndSelfTo<PassengerInteractionHandler>().FromInstance(passengerInteractionHandler).AsSingle();
+                Container.QueueForInject(passengerInteractionHandler);
             }
 
             var busController = FindObjectOfType<BusController>();
@@ -151,13 +186,6 @@ namespace BusJam.Installers
             {
                 Container.BindInterfacesAndSelfTo<InputManager>().FromInstance(inputManager).AsSingle();
                 Container.QueueForInject(inputManager);
-            }
-
-            var saveManager = FindObjectOfType<SaveManager>();
-            if (saveManager != null)
-            {
-                Container.BindInterfacesAndSelfTo<SaveManager>().FromInstance(saveManager).AsSingle();
-                Container.QueueForInject(saveManager);
             }
         }
 

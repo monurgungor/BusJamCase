@@ -14,13 +14,14 @@ namespace BusJam.MVC.Models
 
     public class BusModel
     {
-        public BusModel(PassengerColor busColor, int capacity, Vector3 arrivalPosition, Vector3 departurePosition)
+        public BusModel(PassengerColor busColor, int capacity, Vector3 spawnPosition, Vector3 arrivalPosition, Vector3 departurePosition)
         {
             UnityEngine.Debug.Assert(capacity > 0, "[BUS MODEL] Capacity must be greater than 0");
             UnityEngine.Debug.Assert(System.Enum.IsDefined(typeof(PassengerColor), busColor), "[BUS MODEL] Invalid passenger color");
             
             BusColor = busColor;
             Capacity = capacity;
+            SpawnPosition = spawnPosition;
             ArrivalPosition = arrivalPosition;
             DeparturePosition = departurePosition;
             State = BusState.Approaching;
@@ -31,6 +32,7 @@ namespace BusJam.MVC.Models
         public PassengerColor BusColor { get; private set; }
         public int Capacity { get; }
         public BusState State { get; private set; }
+        public Vector3 SpawnPosition { get; private set; }
         public Vector3 ArrivalPosition { get; private set; }
         public Vector3 DeparturePosition { get; private set; }
         public List<GameObject> PassengerViews { get; }

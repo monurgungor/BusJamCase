@@ -3,9 +3,7 @@ using System.Linq;
 using BusJam.Core;
 using BusJam.Data;
 using BusJam.Events;
-using BusJam.MVC.Models;
 using BusJam.MVC.Views;
-using BusJam.Pooling;
 using UnityEngine;
 using Zenject;
 
@@ -53,48 +51,24 @@ namespace BusJam.MVC.Controllers
     
     public class GridController : MonoBehaviour, IInitializable
     {
-        [SerializeField] private Transform gridParent;
-        
-        private readonly Dictionary<Vector2Int, GridCellView> _cellLookup = new();
-        private PoolingGridCells _gridCellPool;
-        private GameConfig _gameConfig;
-        private GridModel _gridModel;
+        private GridGenerator _gridGenerator;
+        private PathfindingService _pathfindingService;
         private SignalBus _signalBus;
         
         private BusController _busController;
         private BenchController _benchController;
         
-        public Vector3 GridOffset => gridParent != null ? gridParent.position : Vector3.zero;
-        public GridCellView[,] GridCells { get; private set; }
-        
-        private void OnDestroy()
-        {
-            UnsubscribeFromEvents();
-            ClearGrid();
-        }
-        
         public void Initialize()
         {
-            SetupGridParent();
             SubscribeToEvents();
         }
 
         [Inject]
-        public void Construct(SignalBus signalBus, GameConfig gameConfig, PoolingGridCells gridCellPool)
+        public void Construct(SignalBus signalBus, GridGenerator gridGenerator, PathfindingService pathfindingService)
         {
             _signalBus = signalBus;
-            _gameConfig = gameConfig;
-            _gridCellPool = gridCellPool;
-        }
-
-        private void SetupGridParent()
-        {
-            if (gridParent == null)
-            {
-                var parentGo = new GameObject("Grid");
-                parentGo.transform.SetParent(transform);
-                gridParent = parentGo.transform;
-            }
+            _gridGenerator = gridGenerator;
+            _pathfindingService = pathfindingService;
         }
 
         private void SubscribeToEvents()
@@ -104,68 +78,14 @@ namespace BusJam.MVC.Controllers
 
         private void OnLevelLoaded(LevelLoadedSignal signal)
         {
-            InitializeLevel(signal.LevelData);
+            _gridGenerator.InitializeLevel(signal.LevelData);
         }
         
         public void RegisterControllers(BusController busController, BenchController benchController)
         {
             _busController = busController;
             _benchController = benchController;
-            Debug.Log("[GRID CONTROLLER] Controllers registered successfully");
         }
-        
-        #region Grid Management
-
-        private void InitializeLevel(LevelData levelData)
-        {
-            ClearGrid();
-            CreateGridModel(levelData);
-            GenerateGrid();
-        }
-
-        private void CreateGridModel(LevelData levelData)
-        {
-            _gridModel = new GridModel(
-                levelData.cols,
-                levelData.rows,
-                _gameConfig.CellSize,
-                GridOffset,
-                levelData);
-        }
-
-        private void GenerateGrid()
-        {
-            GridCells = new GridCellView[_gridModel.Width, _gridModel.Height];
-            _cellLookup.Clear();
-
-            for (var x = 0; x < _gridModel.Width; x++)
-            for (var y = 0; y < _gridModel.Height; y++)
-                CreateGridCell(x, y);
-        }
-
-        private void CreateGridCell(int x, int y)
-        {
-            var gridPosition = new Vector2Int(x, y);
-            var worldPosition = GridToWorldPosition(gridPosition);
-            var isVoid = IsVoidCell(gridPosition);
-
-            var cell = _gridCellPool.Get();
-            if (cell == null)
-            {
-                Debug.LogError("Failed to get grid cell from pool");
-                return;
-            }
-
-            cell.Initialize(gridPosition, worldPosition, isVoid);
-            cell.transform.SetParent(gridParent);
-            cell.transform.position = worldPosition;
-
-            GridCells[x, y] = cell;
-            _cellLookup[gridPosition] = cell;
-            cell.name = $"GridCell_{x}_{y}";
-        }
-
-        #endregion
         
         public MovementValidationResult ValidatePassengerMovement(Vector2Int passengerPosition, PassengerColor color)
         {
@@ -183,10 +103,10 @@ namespace BusJam.MVC.Controllers
         
         public bool CanPassengerMoveAtAll(Vector2Int position)
         {
-            if (!IsValidPosition(position)) return false;
+            if (!_gridGenerator.IsValidPosition(position)) return false;
 
-            var neighbors = GetDirectNeighbors(position);
-            return neighbors.Any(IsCellEmpty);
+            var neighbors = _pathfindingService.GetDirectNeighbors(position);
+            return neighbors.Any(_gridGenerator.IsCellEmpty);
         }
         
         private bool IsBusAvailableForColor(PassengerColor color)
@@ -211,149 +131,64 @@ namespace BusJam.MVC.Controllers
             return _benchController.CanAcceptPassenger();
         }
         
-        #region Grid Queries
-
         public Vector3 GridToWorldPosition(Vector2Int gridPosition)
         {
-            return _gridModel?.GridToWorldPosition(gridPosition) ?? Vector3.zero;
+            return _gridGenerator.GridToWorldPosition(gridPosition);
         }
 
         public Vector2Int WorldToGridPosition(Vector3 worldPosition)
         {
-            return _gridModel?.WorldToGridPosition(worldPosition) ?? Vector2Int.zero;
+            return _gridGenerator.WorldToGridPosition(worldPosition);
         }
 
         public bool IsValidPosition(Vector2Int gridPosition)
         {
-            return _gridModel?.IsValidPosition(gridPosition) ?? false;
+            return _gridGenerator.IsValidPosition(gridPosition);
         }
 
         public GridCellView GetCellAt(Vector2Int gridPosition)
         {
-            _cellLookup.TryGetValue(gridPosition, out var cell);
-            return cell;
+            return _gridGenerator.GetCellAt(gridPosition);
         }
 
         public bool IsCellEmpty(Vector2Int gridPosition)
         {
-            var cell = GetCellAt(gridPosition);
-            return cell != null && cell.IsEmpty && !IsVoidCell(gridPosition);
+            return _gridGenerator.IsCellEmpty(gridPosition);
         }
 
         public bool IsVoidCell(Vector2Int gridPosition)
         {
-            return _gridModel?.IsVoidCell(gridPosition) ?? false;
+            return _gridGenerator.IsVoidCell(gridPosition);
         }
 
         public List<Vector2Int> GetDirectNeighbors(Vector2Int gridPosition)
         {
-            var neighbors = new List<Vector2Int>();
-            var directions = new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
-
-            foreach (var direction in directions)
-            {
-                var neighborPos = gridPosition + direction;
-                if (IsValidPosition(neighborPos)) 
-                    neighbors.Add(neighborPos);
-            }
-
-            return neighbors;
+            return _pathfindingService.GetDirectNeighbors(gridPosition);
         }
 
         public void SetCellState(Vector2Int gridPosition, bool isEmpty)
         {
-            var cell = GetCellAt(gridPosition);
-            if (cell != null) cell.SetEmpty(isEmpty);
+            _gridGenerator.SetCellState(gridPosition, isEmpty);
         }
 
         public int GetGridHeight()
         {
-            return _gridModel?.Height ?? 0;
+            return _gridGenerator.GetGridHeight();
         }
 
         public int GetGridWidth()
         {
-            return _gridModel?.Width ?? 0;
+            return _gridGenerator.GetGridWidth();
         }
 
-
-        #endregion
-
-        #region Cleanup
-
-        private void ClearGrid()
+        public List<Vector2Int> FindPathToFrontRow(Vector2Int startPos)
         {
-            if (GridCells != null && _gridCellPool != null)
-            {
-                foreach (var cell in GridCells)
-                    if (cell != null)
-                        _gridCellPool.Return(cell);
-            }
-
-            GridCells = null;
-            _cellLookup.Clear();
+            return _pathfindingService.FindPathToFrontRow(startPos);
         }
 
         private void UnsubscribeFromEvents()
         {
             _signalBus?.TryUnsubscribe<LevelLoadedSignal>(OnLevelLoaded);
         }
-
-        #endregion
-
-        #region Pathfinding
-        public List<Vector2Int> FindPathToFrontRow(Vector2Int startPos)
-        {
-            const int targetRow = 0;
-            
-            if (startPos.y == targetRow)
-            {
-                return new List<Vector2Int>();
-            }
-            
-            var visited = new HashSet<Vector2Int>();
-            var queue = new Queue<PathNode>();
-            
-            queue.Enqueue(new PathNode(startPos, new List<Vector2Int> { startPos }));
-            visited.Add(startPos);
-            
-            while (queue.Count > 0)
-            {
-                var current = queue.Dequeue();
-                
-                if (current.Position.y == targetRow)
-                {
-                    var path = current.Path.Skip(1).ToList();
-                    return path;
-                }
-                
-                var neighbors = GetDirectNeighbors(current.Position);
-                foreach (var neighbor in neighbors)
-                {
-                    if (visited.Contains(neighbor) || !IsCellEmpty(neighbor))
-                        continue;
-                    
-                    visited.Add(neighbor);
-                    var newPath = new List<Vector2Int>(current.Path) { neighbor };
-                    queue.Enqueue(new PathNode(neighbor, newPath));
-                }
-            }
-            
-            return new List<Vector2Int>();
-        }
-        
-        private class PathNode
-        {
-            public Vector2Int Position { get; }
-            public List<Vector2Int> Path { get; }
-            
-            public PathNode(Vector2Int position, List<Vector2Int> path)
-            {
-                Position = position;
-                Path = path;
-            }
-        }
-
-        #endregion
     }
 }
